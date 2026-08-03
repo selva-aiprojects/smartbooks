@@ -26,9 +26,9 @@ const mockAccounts = [
 
 export default function AccountsPage() {
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Chart of Accounts</Typography>
+    <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">Chart of Accounts</Typography>
         <Button variant="contained">
           Add Account
         </Button>

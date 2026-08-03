@@ -6,7 +6,16 @@ import { config } from '../core/config';
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 12;
 
-export async function registerUser(email: string, password: string, companyName: string, currency: string = 'INR', subdomain?: string) {
+export async function registerUser(
+  email: string, 
+  password: string, 
+  companyName: string, 
+  currency: string = 'INR', 
+  subdomain?: string,
+  plan: string = 'enterprise',
+  contactEmail?: string,
+  contactPhone?: string
+) {
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
   const companySubdomain = subdomain || (email.split('@')[0] + '-' + Date.now());
   
@@ -15,7 +24,10 @@ export async function registerUser(email: string, password: string, companyName:
       data: {
         name: companyName,
         subdomain: companySubdomain,
-        currency: currency || 'INR'
+        currency: currency || 'INR',
+        plan: plan || 'enterprise',
+        contactEmail: contactEmail || email,
+        contactPhone: contactPhone || null,
       }
     });
 
@@ -79,6 +91,9 @@ export async function getUserById(id: string) {
           name: true,
           subdomain: true,
           currency: true,
+          plan: true,
+          contactEmail: true,
+          contactPhone: true,
           accounts: true
         }
       }

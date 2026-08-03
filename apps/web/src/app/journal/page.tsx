@@ -58,9 +58,9 @@ export default function JournalPage() {
   }, []);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Journal Entries</Typography>
+    <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">Journal Entries</Typography>
         <Button 
           variant="contained" 
           component={Link}

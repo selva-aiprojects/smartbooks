@@ -1,0 +1,4 @@
+{
+  "buildCommand": "prisma generate && next build apps/web",
+  "outputDirectory": "apps/web/.next"
+}

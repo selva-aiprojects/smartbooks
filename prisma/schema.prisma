@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Company {
@@ -12,6 +12,9 @@ model Company {
   name             String
   subdomain        String            @unique
   currency         String            @default("INR")
+  plan             String            @default("enterprise")
+  contactEmail     String?
+  contactPhone     String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   users            User[]

@@ -3,8 +3,8 @@ import { loginUser, registerUser, getUserById } from '../services/auth.service';
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, companyName, currency, subdomain } = req.body;
-    const user = await registerUser(email, password, companyName, currency, subdomain);
+    const { email, password, companyName, currency, subdomain, plan, contactEmail, contactPhone } = req.body;
+    const user = await registerUser(email, password, companyName, currency, subdomain, plan, contactEmail, contactPhone);
     res.status(201).json({ message: 'Tenant organization & admin registered successfully', user });
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
