@@ -55,6 +55,7 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useTenant } from '../context/TenantContext';
 
 const DRAWER_WIDTH = 270;
 
@@ -88,20 +89,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { tenants, activeTenant, switchTenant } = useTenant();
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activePlan, setActivePlan] = useState<'starter' | 'growth' | 'enterprise'>('enterprise');
 
-  // Sync active plan with user's tenant company plan when loaded
+  // Sync active plan with active tenant's plan
   useEffect(() => {
-    if ((user?.company as any)?.plan) {
-      const tenantPlan = (user?.company as any).plan.toLowerCase();
-      if (tenantPlan === 'starter' || tenantPlan === 'growth' || tenantPlan === 'enterprise') {
-        setActivePlan(tenantPlan as any);
-      }
+    if (activeTenant?.plan) {
+      setActivePlan(activeTenant.plan);
     }
-  }, [user?.company]);
+  }, [activeTenant]);
 
   // Tenant Creation Modal State
   const [openTenantModal, setOpenTenantModal] = useState(false);
@@ -337,6 +336,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexShrink: 0 }}>
+            {/* Active Tenant Organization Selector Dropdown */}
+            <FormControl size="small" sx={{ minWidth: 200, display: { xs: 'none', sm: 'flex' } }}>
+              <Select
+                value={activeTenant.id}
+                onChange={(e) => switchTenant(e.target.value)}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#f1f5f9',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  '& .MuiSelect-select': { py: 0.75, display: 'flex', alignItems: 'center', gap: 1 }
+                }}
+              >
+                {tenants.map((t) => (
+                  <MenuItem key={t.id} value={t.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 1 }}>
+                    <Typography variant="subtitle2" fontWeight="700">{t.name}</Typography>
+                    <Typography variant="caption" color="text.secondary" fontSize={11}>
+                      {t.edition} · Schema: {t.schema}
+                    </Typography>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               size="small"

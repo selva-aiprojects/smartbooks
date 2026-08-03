@@ -1,9 +1,10 @@
 import { AuthProvider } from '../context/AuthContext';
+import { TenantProvider } from '../context/TenantContext';
 import AppShell from '../components/AppShell';
 
 export const metadata = {
-  title: 'SmartBooks - Enterprise Accounting Platform',
-  description: 'Intelligent Enterprise Accounting Platform',
+  title: 'SmartBooks - Enterprise Autonomous AI Accounting Platform',
+  description: 'Intelligent Enterprise Autonomous AI Accounting Engine',
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -28,9 +29,11 @@ export default function RootLayout({
       </head>
       <body style={{ margin: 0, fontFamily: 'Roboto, sans-serif', backgroundColor: '#f8fafc' }} suppressHydrationWarning>
         <AuthProvider>
-          <AppShell>
-            {children}
-          </AppShell>
+          <TenantProvider>
+            <AppShell>
+              {children}
+            </AppShell>
+          </TenantProvider>
         </AuthProvider>
       </body>
     </html>

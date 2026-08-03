@@ -42,91 +42,64 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
+import { useTenant } from '../../context/TenantContext';
 import { BarChart, PieChart, LineChart } from '@mui/x-charts';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { activeTenant } = useTenant();
   const [timeframe, setTimeframe] = useState<'this_month' | 'quarter' | 'ytd'>('this_month');
 
+  // Metrics dynamically sourced from Active Tenant Schema/Context
+  const m = activeTenant.metrics;
+
   // 1. Today's Collections Data
-  const todaysCollections = 145000;
-  const todaysCollectionsGrowth = '+24% vs yesterday';
+  const todaysCollections = m.todaysCollections;
+  const todaysCollectionsGrowth = `+${m.collectionsGrowth}% vs yesterday`;
 
   // 2. GST Due Data
-  const gstDueAmount = 48250;
-  const outputGST = 82500;
-  const inputTaxCredit = 34250;
-  const gstDueDate = '20th Aug';
+  const gstDueAmount = m.gstDue;
+  const outputGST = m.outputGst;
+  const inputTaxCredit = m.inputTaxCredit;
+  const gstDueDate = m.gstDueDate;
 
   // 3. Cash Position Data
-  const cashPosition = 1485000;
-  const bankBreakdown = [
-    { bank: 'HDFC Bank (Primary)', balance: 950000 },
-    { bank: 'ICICI Bank (Operational)', balance: 485000 },
-    { bank: 'Petty Cash', balance: 50000 },
-  ];
+  const cashPosition = m.cashPosition;
+  const bankBreakdown = m.bankAccounts.map(b => ({ bank: b.name, balance: b.balance }));
 
   // 4. Upcoming Vendor Payments
   const upcomingVendorPayments = [
-    { vendor: 'AWS Cloud India', amount: 45000, dueIn: '2 Days', category: 'Software & Cloud' },
-    { vendor: 'Bharti Airtel Telecom', amount: 18500, dueIn: '4 Days', category: 'Utilities' },
-    { vendor: 'DLF Commercial Space', amount: 120000, dueIn: '6 Days', category: 'Rent' },
+    { vendor: 'AWS Cloud Services', amount: Math.round(m.upcomingPayments * 0.45), dueIn: '2 Days', category: 'Software & Cloud' },
+    { vendor: 'Airtel Telecom & Utilities', amount: Math.round(m.upcomingPayments * 0.15), dueIn: '4 Days', category: 'Utilities' },
+    { vendor: 'DLF Commercial Workspace', amount: Math.round(m.upcomingPayments * 0.40), dueIn: '6 Days', category: 'Rent & Infra' },
   ];
 
   // 5 & 6. Receivables & Payables Aging Data
-  const receivablesAging = [
-    { range: '0-30 Days', amount: 380000 },
-    { range: '31-60 Days', amount: 140000 },
-    { range: '61-90 Days', amount: 40000 },
-    { range: '>90 Days', amount: 20000 },
-  ];
+  const receivablesAging = m.receivablesAging.map(a => ({ range: a.bracket, amount: a.amount }));
+  const payablesAging = m.payablesAging.map(a => ({ range: a.bracket, amount: a.amount }));
 
-  const payablesAging = [
-    { range: '0-30 Days', amount: 240000 },
-    { range: '31-60 Days', amount: 70000 },
-    { range: '61-90 Days', amount: 20000 },
-    { range: '>90 Days', amount: 10000 },
-  ];
-
-  const totalReceivables = receivablesAging.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalPayables = payablesAging.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalReceivables = m.receivables;
+  const totalPayables = m.payables;
 
   // 7 & 8. Burn Rate & Cash Runway
-  const monthlyBurnRate = 185000;
-  const cashRunwayMonths = (cashPosition / monthlyBurnRate).toFixed(1);
+  const monthlyBurnRate = m.burnRate;
+  const cashRunwayMonths = m.cashRunwayMonths.toFixed(1);
 
   // 9. Top 10 Customers Leaderboard
-  const top10Customers = [
-    { rank: 1, name: 'Tata Consultancy Services', revenue: 450000, invoices: 12, status: 'On Time' },
-    { rank: 2, name: 'Infosys Limited', revenue: 380000, invoices: 9, status: 'On Time' },
-    { rank: 3, name: 'Reliance Industries', revenue: 320000, invoices: 8, status: 'On Time' },
-    { rank: 4, name: 'Wipro Enterprise', revenue: 290000, invoices: 7, status: '1 Pending' },
-    { rank: 5, name: 'HCL Technologies', revenue: 240000, invoices: 6, status: 'On Time' },
-    { rank: 6, name: 'Tech Mahindra', revenue: 210000, invoices: 5, status: 'On Time' },
-    { rank: 7, name: 'Larsen & Toubro', revenue: 185000, invoices: 4, status: 'On Time' },
-    { rank: 8, name: 'Bharti Airtel Ltd', revenue: 160000, invoices: 4, status: '1 Pending' },
-    { rank: 9, name: 'Adani Group Enterprises', revenue: 140000, invoices: 3, status: 'On Time' },
-    { rank: 10, name: 'Flipkart India Pvt Ltd', revenue: 125000, invoices: 3, status: 'On Time' },
-  ];
+  const top10Customers = m.topCustomers.map((c, i) => ({
+    rank: i + 1,
+    name: c.name,
+    revenue: c.revenue,
+    invoices: c.invoices,
+    status: c.status
+  }));
 
   // 10. AI Insights
-  const aiInsights = [
-    {
-      type: 'opportunity',
-      title: 'Early Vendor Payment Discount',
-      desc: 'Pay DLF Commercial (₹1.2L) before Aug 10 to claim 2% prompt payment discount (Save ₹2,400).'
-    },
-    {
-      type: 'tax',
-      title: 'Unclaimed GST Input Credit Identified',
-      desc: 'Scanned 4 AWS & Airtel bills with ₹34,250 ITC available to offset GSTR-3B liability before 20th Aug.'
-    },
-    {
-      type: 'runway',
-      title: 'Runway Extended by +2.4 Months',
-      desc: 'Strong collections of ₹1.45L today pushed total liquid reserves to 18.5 months of operational runway.'
-    }
-  ];
+  const aiInsights = m.aiAlerts.map(alert => ({
+    type: alert.type === 'warning' ? 'tax' : 'opportunity',
+    title: alert.type === 'warning' ? 'Expense Anomaly & Audit Alert' : 'Business Intelligence Opportunity',
+    desc: alert.message
+  }));
 
   return (
     <Box sx={{ flexGrow: 1, pb: 4 }}>
@@ -137,7 +110,7 @@ export default function DashboardPage() {
             Financial Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Organization: <strong>{user?.company?.name || 'SmartBooks Demo Corp'}</strong> ({user?.company?.currency || 'INR'} ₹)
+            Tenant Schema: <strong style={{ color: '#0284c7' }}>{activeTenant.schema}</strong> · <strong>{activeTenant.name}</strong> ({activeTenant.edition} · GSTIN: {activeTenant.gstin})
           </Typography>
         </Box>
 
