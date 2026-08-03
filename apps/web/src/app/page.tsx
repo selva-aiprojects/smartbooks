@@ -250,7 +250,7 @@ export default function MarketingLandingPage() {
           <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
             Enterprise Capabilities
           </Typography>
-          <Typography variant="h3" fontWeight="800" sx={{ mt: 1, mb: 2, letterSpacing: '-0.5px' }}>
+          <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2, letterSpacing: '-0.5px' }}>
             Everything Needed to Run Modern Financial Operations
           </Typography>
           <Typography variant="body1" color="#94a3b8">
@@ -328,7 +328,7 @@ export default function MarketingLandingPage() {
             <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
               Transparent Subscription Plans (in ₹ INR)
             </Typography>
-            <Typography variant="h3" fontWeight="800" sx={{ mt: 1, mb: 2 }}>
+            <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
               Choose the Right Plan for Your Scale
             </Typography>
             <Typography variant="body1" color="#94a3b8">
@@ -354,7 +354,7 @@ export default function MarketingLandingPage() {
               <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <Box>
                   <Chip label="Starter / Essentials" color="success" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
                     {billingCycle === 'annual' ? '₹1,999' : '₹2,499'} 
                     <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
                   </Typography>
@@ -387,7 +387,7 @@ export default function MarketingLandingPage() {
                 </Box>
                 <Box>
                   <Chip label="Growth / Professional" color="info" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
                     {billingCycle === 'annual' ? '₹4,999' : '₹5,999'} 
                     <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
                   </Typography>
@@ -417,7 +417,7 @@ export default function MarketingLandingPage() {
               <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <Box>
                   <Chip label="Enterprise / Premium" color="secondary" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
                     {billingCycle === 'annual' ? '₹11,999' : '₹14,999'} 
                     <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
                   </Typography>
@@ -453,7 +453,7 @@ export default function MarketingLandingPage() {
               <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Financial ROI Calculator
               </Typography>
-              <Typography variant="h3" fontWeight="800" sx={{ mt: 1, mb: 2 }}>
+              <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
                 See How Much Time & Money SmartBooks Saves
               </Typography>
               <Typography variant="body1" color="#94a3b8" sx={{ mb: 4 }}>
@@ -516,7 +516,7 @@ export default function MarketingLandingPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <ShieldIcon sx={{ fontSize: 40, color: '#10b981' }} />
                 <Box>
-                  <Typography variant="h6" fontWeight="bold">256-Bit SSL Encryption</Typography>
+                  <Typography variant="h6" fontWeight="bold" color="#ffffff">256-Bit SSL Encryption</Typography>
                   <Typography variant="body2" color="#94a3b8">Bank-grade data encryption in transit and at rest.</Typography>
                 </Box>
               </Box>
@@ -526,7 +526,7 @@ export default function MarketingLandingPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <VerifiedIcon sx={{ fontSize: 40, color: '#38bdf8' }} />
                 <Box>
-                  <Typography variant="h6" fontWeight="bold">SOC2 Type II Compliant</Typography>
+                  <Typography variant="h6" fontWeight="bold" color="#ffffff">SOC2 Type II Compliant</Typography>
                   <Typography variant="body2" color="#94a3b8">Audited data security and operational standards.</Typography>
                 </Box>
               </Box>
@@ -536,7 +536,7 @@ export default function MarketingLandingPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <LockIcon sx={{ fontSize: 40, color: '#8b5cf6' }} />
                 <Box>
-                  <Typography variant="h6" fontWeight="bold">Multi-Tenant Isolation</Typography>
+                  <Typography variant="h6" fontWeight="bold" color="#ffffff">Multi-Tenant Isolation</Typography>
                   <Typography variant="body2" color="#94a3b8">Complete database organization data separation.</Typography>
                 </Box>
               </Box>
@@ -546,7 +546,7 @@ export default function MarketingLandingPage() {
       </Box>
 
       {/* 8. Footer */}
-      <Box sx={{ py: 6, bgcolor: '#070a12', borderTop: '1px solid #1e293b', color: '#64748b' }}>
+      <Box sx={{ py: 6, bgcolor: '#070a12', borderTop: '1px solid #1e293b', color: '#94a3b8' }}>
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -554,7 +554,7 @@ export default function MarketingLandingPage() {
               <Typography variant="subtitle1" fontWeight="800" color="#ffffff" sx={{ letterSpacing: '-0.3px' }}>SmartBooks Inc</Typography>
             </Box>
 
-            <Typography variant="body2">
+            <Typography variant="body2" color="#94a3b8">
               © 2026 SmartBooks Enterprise Accounting Platform. All rights reserved.
             </Typography>
           </Box>
