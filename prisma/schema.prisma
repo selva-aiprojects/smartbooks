@@ -7,6 +7,12 @@ datasource db {
   url      = "postgresql://postgres:postgres@localhost:5432/smartbooks?schema=public"
 }
 
+enum JournalEntryStatus {
+  Posted
+  Draft
+  Void
+}
+
 model Company {
   id        String   @id @default(uuid())
   name      String
@@ -55,7 +61,7 @@ model JournalEntry {
   company     Company     @relation(fields: [companyId], references: [id])
   date        DateTime
   description String?
-  status      String      @default("posted")
+  status      JournalEntryStatus @default(Posted)
   createdById String
   createdBy   User        @relation(fields: [createdById], references: [id])
   lines       JournalLine[]
