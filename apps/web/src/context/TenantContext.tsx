@@ -2,6 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+export type TenantRole = 'Owner' | 'Tenant Admin' | 'Finance Manager' | 'Accountant' | 'Inventory Manager' | 'Cashier';
+
+export interface TenantUser {
+  id: string;
+  name: string;
+  email: string;
+  role: TenantRole;
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+  lastLogin?: string;
+}
+
 export interface TenantMetrics {
   todaysCollections: number;
   collectionsGrowth: number;
@@ -33,6 +45,7 @@ export interface Tenant {
   currency: string;
   plan: 'starter' | 'growth' | 'enterprise';
   metrics: TenantMetrics;
+  users: TenantUser[];
 }
 
 const INITIAL_TENANTS: Tenant[] = [
@@ -45,6 +58,13 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '27AAACA12341Z1',
     currency: '₹',
     plan: 'enterprise',
+    users: [
+      { id: 'u-101', name: 'Vikram Mehta', email: 'owner@acme.com', role: 'Owner', status: 'Active', createdAt: '2026-01-10', lastLogin: '10 mins ago' },
+      { id: 'u-102', name: 'Ananya Sharma', email: 'admin@acme.com', role: 'Tenant Admin', status: 'Active', createdAt: '2026-01-12', lastLogin: '1 hour ago' },
+      { id: 'u-103', name: 'Rajesh Kumar', email: 'fm@acme.com', role: 'Finance Manager', status: 'Active', createdAt: '2026-02-01', lastLogin: 'Yesterday' },
+      { id: 'u-104', name: 'Sanjay Patel', email: 'accountant@acme.com', role: 'Accountant', status: 'Active', createdAt: '2026-03-15', lastLogin: '3 hours ago' },
+      { id: 'u-105', name: 'Kavita Singh', email: 'inventory@acme.com', role: 'Inventory Manager', status: 'Active', createdAt: '2026-04-10', lastLogin: '2 days ago' }
+    ],
     metrics: {
       todaysCollections: 145000,
       collectionsGrowth: 24,
@@ -98,6 +118,13 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '29BBBBN56782Z2',
     currency: '₹',
     plan: 'growth',
+    users: [
+      { id: 'u-201', name: 'Priya Nair', email: 'owner@nexusretail.com', role: 'Owner', status: 'Active', createdAt: '2026-02-01', lastLogin: '5 mins ago' },
+      { id: 'u-202', name: 'Rahul Deshmukh', email: 'admin@nexusretail.com', role: 'Tenant Admin', status: 'Active', createdAt: '2026-02-05', lastLogin: '30 mins ago' },
+      { id: 'u-203', name: 'Amitabh Sen', email: 'cashier1@nexusretail.com', role: 'Cashier', status: 'Active', createdAt: '2026-03-01', lastLogin: 'Just now' },
+      { id: 'u-204', name: 'Pooja Verma', email: 'cashier2@nexusretail.com', role: 'Cashier', status: 'Active', createdAt: '2026-03-02', lastLogin: '2 hours ago' },
+      { id: 'u-205', name: 'Sunil Rao', email: 'inventory@nexusretail.com', role: 'Inventory Manager', status: 'Active', createdAt: '2026-03-10', lastLogin: 'Yesterday' }
+    ],
     metrics: {
       todaysCollections: 392000,
       collectionsGrowth: 18,
@@ -151,6 +178,12 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '07CCCCM91013Z3',
     currency: '₹',
     plan: 'enterprise',
+    users: [
+      { id: 'u-301', name: 'Deepak Joshi', email: 'owner@vanguardmfg.com', role: 'Owner', status: 'Active', createdAt: '2025-11-01', lastLogin: '1 hour ago' },
+      { id: 'u-302', name: 'Manish Pandey', email: 'admin@vanguardmfg.com', role: 'Tenant Admin', status: 'Active', createdAt: '2025-11-05', lastLogin: '4 hours ago' },
+      { id: 'u-303', name: 'Shruti Gupta', email: 'fm@vanguardmfg.com', role: 'Finance Manager', status: 'Active', createdAt: '2025-12-01', lastLogin: 'Yesterday' },
+      { id: 'u-304', name: 'Rohan Kulkarni', email: 'inventory@vanguardmfg.com', role: 'Inventory Manager', status: 'Active', createdAt: '2026-01-15', lastLogin: 'Today' }
+    ],
     metrics: {
       todaysCollections: 840000,
       collectionsGrowth: 32,
@@ -204,6 +237,11 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '33DDDDH43214Z4',
     currency: '₹',
     plan: 'growth',
+    users: [
+      { id: 'u-401', name: 'Dr. Suresh Reddy', email: 'owner@apexhealth.com', role: 'Owner', status: 'Active', createdAt: '2026-02-10', lastLogin: '2 hours ago' },
+      { id: 'u-402', name: 'Meena Saxena', email: 'admin@apexhealth.com', role: 'Tenant Admin', status: 'Active', createdAt: '2026-02-12', lastLogin: '1 day ago' },
+      { id: 'u-403', name: 'Ganesh Iyer', email: 'accountant@apexhealth.com', role: 'Accountant', status: 'Active', createdAt: '2026-03-01', lastLogin: '3 hours ago' }
+    ],
     metrics: {
       todaysCollections: 215000,
       collectionsGrowth: 15,
@@ -257,6 +295,10 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '19EEEEF87655Z5',
     currency: '₹',
     plan: 'starter',
+    users: [
+      { id: 'u-501', name: 'Chef Gordon Das', email: 'owner@flavorsfnb.com', role: 'Owner', status: 'Active', createdAt: '2026-03-01', lastLogin: '10 mins ago' },
+      { id: 'u-502', name: 'Arjun Kapoor', email: 'cashier@flavorsfnb.com', role: 'Cashier', status: 'Active', createdAt: '2026-03-05', lastLogin: 'Just now' }
+    ],
     metrics: {
       todaysCollections: 98000,
       collectionsGrowth: 22,
@@ -308,6 +350,9 @@ interface TenantContextType {
   activeTenant: Tenant;
   switchTenant: (tenantId: string) => void;
   addTenant: (newTenant: Partial<Tenant>) => void;
+  addTenantUser: (tenantId: string, user: Omit<TenantUser, 'id' | 'createdAt'>) => void;
+  updateTenantUser: (tenantId: string, userId: string, updates: Partial<TenantUser>) => void;
+  deleteTenantUser: (tenantId: string, userId: string) => void;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -315,7 +360,7 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('smartbooks_tenants');
+      const saved = localStorage.getItem('smartbooks_tenants_v2');
       if (saved) {
         try { return JSON.parse(saved); } catch (e) {}
       }
@@ -343,6 +388,13 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const saveTenants = (updated: Tenant[]) => {
+    setTenants(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('smartbooks_tenants_v2', JSON.stringify(updated));
+    }
+  };
+
   const addTenant = (newTenantData: Partial<Tenant>) => {
     const id = `tenant-${Date.now()}`;
     const newTenant: Tenant = {
@@ -354,6 +406,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       gstin: newTenantData.gstin || '27XXXXX0000X1Z1',
       currency: newTenantData.currency || '₹',
       plan: newTenantData.plan || 'enterprise',
+      users: [
+        { id: `u-${Date.now()}`, name: 'Organization Admin', email: 'admin@org.com', role: 'Tenant Admin', status: 'Active', createdAt: new Date().toISOString().split('T')[0], lastLogin: 'Just now' }
+      ],
       metrics: {
         todaysCollections: 85000,
         collectionsGrowth: 12,
@@ -381,19 +436,65 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    setTenants(prev => {
-      const updated = [...prev, newTenant];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('smartbooks_tenants', JSON.stringify(updated));
-      }
-      return updated;
-    });
-
+    const updated = [...tenants, newTenant];
+    saveTenants(updated);
     switchTenant(id);
   };
 
+  const addTenantUser = (tenantId: string, userData: Omit<TenantUser, 'id' | 'createdAt'>) => {
+    const newUser: TenantUser = {
+      ...userData,
+      id: `u-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      lastLogin: 'Never'
+    };
+
+    const updated = tenants.map(t => {
+      if (t.id === tenantId) {
+        return { ...t, users: [...t.users, newUser] };
+      }
+      return t;
+    });
+
+    saveTenants(updated);
+  };
+
+  const updateTenantUser = (tenantId: string, userId: string, updates: Partial<TenantUser>) => {
+    const updated = tenants.map(t => {
+      if (t.id === tenantId) {
+        return {
+          ...t,
+          users: t.users.map(u => u.id === userId ? { ...u, ...updates } : u)
+        };
+      }
+      return t;
+    });
+    saveTenants(updated);
+  };
+
+  const deleteTenantUser = (tenantId: string, userId: string) => {
+    const updated = tenants.map(t => {
+      if (t.id === tenantId) {
+        return {
+          ...t,
+          users: t.users.filter(u => u.id !== userId)
+        };
+      }
+      return t;
+    });
+    saveTenants(updated);
+  };
+
   return (
-    <TenantContext.Provider value={{ tenants, activeTenant, switchTenant, addTenant }}>
+    <TenantContext.Provider value={{ 
+      tenants, 
+      activeTenant, 
+      switchTenant, 
+      addTenant,
+      addTenantUser,
+      updateTenantUser,
+      deleteTenantUser
+    }}>
       {children}
     </TenantContext.Provider>
   );
