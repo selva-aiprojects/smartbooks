@@ -66,6 +66,7 @@ export default function MarketingLandingPage() {
 
             <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
               <Link href="#features" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</Link>
+              <Link href="#architecture" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Architecture</Link>
               <Link href="#plans" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Subscription Plans</Link>
               <Link href="#roi-calculator" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>ROI Calculator</Link>
               <Link href="#security" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Security & Trust</Link>
@@ -507,6 +508,113 @@ export default function MarketingLandingPage() {
           </Grid>
         </Paper>
       </Container>
+
+      {/* 6.5 Enterprise Technical Architecture & Infrastructure (For Technical Buyers) */}
+      <Box id="architecture" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#070a12', borderTop: '1px solid #1e293b' }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
+            <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Architected for CTOs & Technical Buyers
+            </Typography>
+            <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
+              Enterprise Platform Infrastructure
+            </Typography>
+            <Typography variant="body1" color="#94a3b8">
+              Engineered from the ground up for high throughput, sub-millisecond query execution, continuous compliance, and seamless API integrations.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3.5}>
+            {[
+              {
+                title: 'Cloud Native',
+                badge: 'Next.js 14 & Serverless Edge',
+                color: '#38bdf8',
+                bgColor: 'rgba(56, 189, 248, 0.12)',
+                borderColor: 'rgba(56, 189, 248, 0.25)',
+                desc: 'Deploy on global edge networks with dynamic serverless functions, automatic horizontal scaling, and sub-50ms query latency.'
+              },
+              {
+                title: 'Multi Tenant',
+                badge: 'Isolated Database Schemas',
+                color: '#10b981',
+                bgColor: 'rgba(16, 185, 129, 0.12)',
+                borderColor: 'rgba(16, 185, 129, 0.25)',
+                desc: 'Strict database tenant isolation with custom organization subdomains, role-based access control (RBAC), and zero cross-tenant data leakage.'
+              },
+              {
+                title: 'Secure',
+                badge: '256-Bit TLS & SOC2 Type II',
+                color: '#f59e0b',
+                bgColor: 'rgba(245, 158, 11, 0.12)',
+                borderColor: 'rgba(245, 158, 11, 0.25)',
+                desc: 'End-to-end encryption in transit and at rest, JWT bearer authentication, automated security audits, and continuous GDPR/GST compliance.'
+              },
+              {
+                title: 'API First',
+                badge: 'RESTful & Webhook Sync',
+                color: '#8b5cf6',
+                bgColor: 'rgba(139, 92, 246, 0.12)',
+                borderColor: 'rgba(139, 92, 246, 0.25)',
+                desc: 'Comprehensive REST APIs, webhook dispatchers, open banking sync, and seamless integration with Razorpay, Stripe, UPI, & ERP systems.'
+              },
+              {
+                title: 'AI Powered',
+                badge: 'OCR Vision & Audit Engine',
+                color: '#ec4899',
+                bgColor: 'rgba(236, 72, 153, 0.12)',
+                borderColor: 'rgba(236, 72, 153, 0.25)',
+                desc: 'Generative AI vision for receipt line-item scanning, automated Chart of Accounts mapping, and real-time anomaly detection.'
+              },
+              {
+                title: 'High Availability',
+                badge: '99.99% Uptime SLA',
+                color: '#06b6d4',
+                bgColor: 'rgba(6, 182, 212, 0.12)',
+                borderColor: 'rgba(6, 182, 212, 0.25)',
+                desc: 'Neon PostgreSQL auto-scaling database clusters, point-in-time recovery, zero-downtime rolling updates, and continuous failover protection.'
+              }
+            ].map((pillar, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <Paper
+                  sx={{
+                    p: 3.5,
+                    height: '100%',
+                    borderRadius: 3,
+                    bgcolor: '#0f172a',
+                    border: `1px solid ${pillar.borderColor}`,
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      borderColor: pillar.color,
+                      boxShadow: `0 12px 24px -10px ${pillar.bgColor}`
+                    }
+                  }}
+                >
+                  <Chip
+                    label={pillar.badge}
+                    size="small"
+                    sx={{
+                      mb: 2,
+                      bgcolor: pillar.bgColor,
+                      color: pillar.color,
+                      fontWeight: 700,
+                      fontSize: 10.5,
+                      border: `1px solid ${pillar.borderColor}`
+                    }}
+                  />
+                  <Typography variant="h5" fontWeight="800" color="#ffffff" sx={{ mb: 1 }}>
+                    {pillar.title}
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8" sx={{ lineHeight: 1.6 }}>
+                    {pillar.desc}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
 
       {/* 7. Security & Compliance Guarantee */}
       <Box id="security" sx={{ py: 8, bgcolor: '#0b1120', borderTop: '1px solid #1e293b' }}>
