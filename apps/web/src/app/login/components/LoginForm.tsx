@@ -11,19 +11,20 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const { login } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      // TODO: Implement API call
+    const success = await login(email, password);
+    if (success) {
       router.push('/dashboard');
-    } catch (err) {
+    } else {
       setError('Invalid credentials. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   return (
