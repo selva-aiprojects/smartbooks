@@ -3,9 +3,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database settings
-    database_url: str
-    supabase_url: str
-    supabase_key: str
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/smartbooks"
     
     # JWT settings
     jwt_secret_key: str
