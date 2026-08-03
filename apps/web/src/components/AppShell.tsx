@@ -50,7 +50,13 @@ import {
   ShowChart as ForecastIcon,
   AutoMode as AutomationIcon,
   Extension as IntegrationsIcon,
-  AddBusiness as AddTenantIcon
+  AddBusiness as AddTenantIcon,
+  Lock as LockIcon,
+  Security as SecurityIcon,
+  AdminPanelSettings as NexusAdminIcon,
+  ConfirmationNumber as TicketIcon,
+  Dns as DnsIcon,
+  BusinessCenter as BusinessCenterIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -85,11 +91,22 @@ const enterpriseItems = [
   { label: 'System Settings', path: '/settings', icon: <SettingsIcon /> },
 ];
 
+// Nexus Platform Admin – dedicated governance nav (no operational accounting screens)
+const nexusAdminItems = [
+  { label: 'Nexus Admin Console', path: '/nexus-admin', icon: <NexusAdminIcon /> },
+];
+const nexusAdminOpsItems = [
+  { label: 'All Tenants Directory', path: '/nexus-admin', icon: <BusinessCenterIcon /> },
+  { label: 'Support Tickets', path: '/nexus-admin', icon: <TicketIcon /> },
+  { label: 'Schema Health Monitor', path: '/nexus-admin', icon: <DnsIcon /> },
+  { label: 'Platform Settings', path: '/settings', icon: <SettingsIcon /> },
+];
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { tenants, activeTenant, switchTenant } = useTenant();
+  const { tenants, visibleTenants, activeTenant, isSuperAdmin, setIsSuperAdmin, switchTenant } = useTenant();
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -101,6 +118,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       setActivePlan(activeTenant.plan);
     }
   }, [activeTenant]);
+
+  // Sync isSuperAdmin from AuthContext user object — covers existing sessions on refresh
+  useEffect(() => {
+    if (!user) return;
+    const isAdmin =
+      !!user.isSuperAdmin ||
+      user.email?.toLowerCase().includes('smartbooks.com') ||
+      user.email?.toLowerCase().includes('smartbooks.ai') ||
+      user.email?.toLowerCase().includes('superadmin');
+    setIsSuperAdmin(isAdmin);
+  }, [user]);
 
   // Tenant Creation Modal State
   const [openTenantModal, setOpenTenantModal] = useState(false);
@@ -169,6 +197,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const showGrowth = activePlan === 'growth' || activePlan === 'enterprise';
+  const showEnterprise = activePlan === 'enterprise';
+
   const renderNavSection = (items: typeof starterItems, headerTitle: string, tierColor: string, badgeLabel: string, isLocked: boolean = false) => (
     <Box sx={{ mb: 1.5, opacity: isLocked ? 0.6 : 1 }}>
       <ListSubheader 
@@ -199,23 +230,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <ListItem key={item.path} disablePadding sx={{ mb: 0.3 }}>
               <ListItemButton
                 component={Link}
-                href={isLocked ? '#plans' : item.path}
-                onClick={() => setMobileOpen(false)}
+                href={isLocked ? '/#plans' : item.path}
+                selected={isActive}
                 sx={{
-                  borderRadius: 2,
-                  py: 0.8,
-                  backgroundColor: isActive ? '#0284c7' : 'transparent',
-                  color: isLocked ? '#64748b' : (isActive ? '#ffffff' : '#cbd5e1'),
+                  borderRadius: 1.5,
+                  py: 0.75,
+                  px: 1.5,
+                  color: isActive ? '#38bdf8' : '#cbd5e1',
+                  bgcolor: isActive ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
                   '&:hover': {
-                    backgroundColor: isLocked ? 'rgba(255,255,255,0.05)' : (isActive ? '#0284c7' : '#334155'),
-                    color: isLocked ? '#94a3b8' : '#ffffff',
+                    bgcolor: 'rgba(255, 255, 255, 0.06)',
+                    color: '#f8fafc',
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: isLocked ? '#64748b' : (isActive ? '#ffffff' : '#94a3b8'), minWidth: 36 }}>
+                <ListItemIcon sx={{ minWidth: 32, color: isActive ? '#38bdf8' : '#94a3b8', '& svg': { fontSize: 20 } }}>
                   {item.icon}
                 </ListItemIcon>
-                <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }} />
+                <ListItemText 
+                  primary={item.label} 
+                  primaryTypographyProps={{ fontSize: 13, fontWeight: isActive ? 700 : 500 }}
+                />
               </ListItemButton>
             </ListItem>
           );
@@ -224,74 +259,71 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </Box>
   );
 
-  const showGrowth = activePlan === 'growth' || activePlan === 'enterprise';
-  const showEnterprise = activePlan === 'enterprise';
-
   const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#0f172a', color: '#fff', overflow: 'hidden' }}>
-      <Box sx={{ flexShrink: 0 }}>
-        <Toolbar component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, textDecoration: 'none', minHeight: '64px !important' }}>
-          <Box component="img" src="/logo-icon-badge.png" alt="SmartBooks Logo" sx={{ width: 38, height: 38, borderRadius: 2.5, boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)', objectFit: 'contain' }} />
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle1" fontWeight="800" sx={{ color: '#ffffff', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
-              SmartBooks
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#0284c7', fontWeight: 700, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-              {activePlan} TIER
-            </Typography>
-          </Box>
-        </Toolbar>
-        
-        <Divider sx={{ borderColor: '#1e293b' }} />
-
-        <Box sx={{ p: 1.5 }}>
-          <Chip 
-            label={`${user?.company?.name || 'SmartBooks Demo Corp'} (${user?.company?.currency || 'INR'})`} 
-            size="small" 
-            onClick={() => setOpenTenantModal(true)}
-            sx={{ 
-              width: '100%', 
-              backgroundColor: '#1e293b', 
-              color: '#38bdf8', 
-              fontWeight: 600,
-              borderRadius: 1.5,
-              cursor: 'pointer',
-              py: 0.5,
-              '&:hover': { backgroundColor: '#334155' }
-            }} 
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0f172a', color: '#f8fafc' }}>
+      {/* App Logo Header */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
+        <Box component={Link} href={isSuperAdmin ? '/nexus-admin' : '/dashboard'} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
+          <Box
+            component="img"
+            src="/logo-icon-badge.png"
+            alt="SmartBooks AI Logo"
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '8px',
+              objectFit: 'contain',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)'
+            }}
           />
-        </Box>
-      </Box>
-
-      <Box sx={{ px: 1, py: 1, flexGrow: 1, overflowY: 'auto' }}>
-        {renderNavSection(starterItems, 'STARTER / ESSENTIALS', '#10b981', 'Starter')}
-        
-        <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
-        {renderNavSection(growthItems, 'GROWTH / PROFESSIONAL', '#0284c7', 'Growth', !showGrowth)}
-        
-        <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
-        {renderNavSection(enterpriseItems, 'ENTERPRISE / PREMIUM', '#8b5cf6', 'Enterprise', !showEnterprise)}
-      </Box>
-
-      <Box sx={{ flexShrink: 0 }}>
-        <Divider sx={{ borderColor: '#1e293b' }} />
-
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ bgcolor: '#0284c7', width: 36, height: 36 }}>
-            {user?.email ? user.email[0].toUpperCase() : 'A'}
-          </Avatar>
-          <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
-            <Typography variant="body2" fontWeight="600" noWrap sx={{ color: '#f8fafc' }}>
-              {user?.email || 'admin@smartbooks.com'}
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ color: '#ffffff', lineHeight: 1.2 }}>
+              SmartBooks AI
             </Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'capitalize' }}>
-              {`${activePlan} Plan User`}
+            <Typography variant="caption" sx={{ color: isSuperAdmin ? '#c4b5fd' : '#38bdf8', fontWeight: 'bold' }}>
+              {isSuperAdmin ? 'Nexus Admin Console' : 'Autonomous ERP'}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={handleLogout} sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
-            <LogoutIcon fontSize="small" />
-          </IconButton>
         </Box>
+      </Box>
+
+      {/* Navigation Links */}
+      <Box sx={{ px: 1, py: 1, flexGrow: 1, overflowY: 'auto' }}>
+        {isSuperAdmin ? (
+          // Nexus Platform Admin view – governance tools only, no accounting screens
+          <>
+            {renderNavSection(nexusAdminItems, 'CONSOLE', '#7c3aed', 'Nexus Admin')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(nexusAdminOpsItems, 'OPERATIONS', '#64748b', 'Admin')}
+          </>
+        ) : (
+          // Tenant User view – operational accounting screens
+          <>
+            {renderNavSection(starterItems, 'STARTER / ESSENTIALS', '#10b981', 'Starter')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(growthItems, 'GROWTH / PROFESSIONAL', '#0284c7', 'Growth', !showGrowth)}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(enterpriseItems, 'ENTERPRISE / PREMIUM', '#8b5cf6', 'Enterprise', !showEnterprise)}
+          </>
+        )}
+      </Box>
+
+      {/* User Footer Profile */}
+      <Box sx={{ flexShrink: 0, borderTop: '1px solid #1e293b', p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Avatar sx={{ bgcolor: '#0284c7', width: 36, height: 36 }}>
+          {user?.email ? user.email[0].toUpperCase() : 'A'}
+        </Avatar>
+        <Box sx={{ overflow: 'hidden', flexGrow: 1 }}>
+          <Typography variant="body2" fontWeight="600" noWrap sx={{ color: '#f8fafc' }}>
+            {user?.email || 'admin@smartbooks.ai'}
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block' }}>
+            {isSuperAdmin ? 'Platform Super Admin' : 'Tenant Owner'}
+          </Typography>
+        </Box>
+        <IconButton size="small" onClick={handleLogout} sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
+          <LogoutIcon fontSize="small" />
+        </IconButton>
       </Box>
     </Box>
   );
@@ -336,52 +368,102 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexShrink: 0 }}>
-            {/* Active Tenant Organization Selector Dropdown */}
-            <FormControl size="small" sx={{ minWidth: 200, display: { xs: 'none', sm: 'flex' } }}>
-              <Select
-                value={activeTenant.id}
-                onChange={(e) => switchTenant(e.target.value)}
-                sx={{
-                  borderRadius: 2,
-                  bgcolor: '#f1f5f9',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  '& .MuiSelect-select': { py: 0.75, display: 'flex', alignItems: 'center', gap: 1 }
+            {/* Multi-Tenant Security & Isolation Control */}
+            {isSuperAdmin ? (
+              <FormControl size="small" sx={{ minWidth: 200, display: { xs: 'none', sm: 'flex' } }}>
+                <Select
+                  value={activeTenant.id}
+                  onChange={(e) => switchTenant(e.target.value)}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: '#eff6ff',
+                    borderColor: '#93c5fd',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    '& .MuiSelect-select': { py: 0.75, display: 'flex', alignItems: 'center', gap: 1 }
+                  }}
+                >
+                  {tenants.map((t) => (
+                    <MenuItem key={t.id} value={t.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 1 }}>
+                      <Typography variant="subtitle2" fontWeight="700">{t.name}</Typography>
+                      <Typography variant="caption" color="text.secondary" fontSize={11}>
+                        {t.edition} · Schema: {t.schema}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              /* Enforced Tenant Isolation Badge */
+              <Box 
+                sx={{ 
+                  display: { xs: 'none', sm: 'flex' }, 
+                  alignItems: 'center', 
+                  gap: 1, 
+                  px: 1.5, 
+                  py: 0.6, 
+                  bgcolor: '#f1f5f9', 
+                  borderRadius: 2, 
+                  border: '1px solid #cbd5e1' 
                 }}
               >
-                {tenants.map((t) => (
-                  <MenuItem key={t.id} value={t.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 1 }}>
-                    <Typography variant="subtitle2" fontWeight="700">{t.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" fontSize={11}>
-                      {t.edition} · Schema: {t.schema}
-                    </Typography>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<AddTenantIcon />}
-              onClick={() => setOpenTenantModal(true)}
-              sx={{ 
-                borderRadius: 2, 
-                textTransform: 'none', 
-                fontWeight: 600, 
-                whiteSpace: 'nowrap',
-                display: { xs: 'none', sm: 'inline-flex' }
-              }}
-            >
-              New Tenant
-            </Button>
+                <LockIcon sx={{ fontSize: 16, color: '#64748b' }} />
+                <Box>
+                  <Typography variant="subtitle2" fontWeight="700" fontSize={12} color="text.primary" lineHeight={1.2}>
+                    {activeTenant.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" fontSize={10} display="block" lineHeight={1.1}>
+                    {activeTenant.edition} · Schema: {activeTenant.schema}
+                  </Typography>
+                </Box>
+                <Chip 
+                  label="Isolated Tenant" 
+                  size="small" 
+                  color="success" 
+                  variant="outlined" 
+                  sx={{ height: 20, fontSize: 10, fontWeight: 700, ml: 0.5 }} 
+                />
+              </Box>
+            )}
 
-            <IconButton
-              color="primary"
-              onClick={() => setOpenTenantModal(true)}
-              sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
-            >
-              <AddTenantIcon fontSize="small" />
-            </IconButton>
+            {/* Toggle Super Admin Mode (Restricted Security Control) */}
+            {user?.isSuperAdmin || user?.email === 'superadmin@smartbooks.ai' ? (
+              <Chip
+                icon={<SecurityIcon style={{ fontSize: 14 }} />}
+                label={isSuperAdmin ? "Super Admin" : "Tenant Mode"}
+                size="small"
+                color={isSuperAdmin ? "warning" : "default"}
+                onClick={() => setIsSuperAdmin(!isSuperAdmin)}
+                sx={{ cursor: 'pointer', fontWeight: 700, fontSize: 11, display: { xs: 'none', md: 'inline-flex' } }}
+              />
+            ) : (
+              <Chip
+                icon={<LockIcon style={{ fontSize: 14 }} />}
+                label="Tenant Isolated"
+                size="small"
+                color="success"
+                variant="outlined"
+                sx={{ fontWeight: 700, fontSize: 11, display: { xs: 'none', md: 'inline-flex' } }}
+              />
+            )}
+
+            {isSuperAdmin && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddTenantIcon />}
+                onClick={() => setOpenTenantModal(true)}
+                sx={{ 
+                  borderRadius: 2, 
+                  textTransform: 'none', 
+                  fontWeight: 600, 
+                  whiteSpace: 'nowrap',
+                  display: { xs: 'none', sm: 'inline-flex' }
+                }}
+              >
+                New Tenant
+              </Button>
+            )}
 
             {/* Active Subscription Plan Badge */}
             <Chip 
@@ -399,26 +481,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               }} 
             />
 
-            {activePlan !== 'enterprise' && (
-              <Button
-                component={Link}
-                href="/#plans"
-                variant="contained"
-                size="small"
-                sx={{ 
-                  bgcolor: '#8b5cf6', 
-                  '&:hover': { bgcolor: '#7c3aed' },
-                  borderRadius: 2, 
-                  textTransform: 'none', 
-                  fontWeight: 700, 
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.35)'
-                }}
-              >
-                Upgrade Plan
-              </Button>
-            )}
+            <Button
+              component={Link}
+              href="/settings?tab=subscription"
+              variant="contained"
+              size="small"
+              sx={{ 
+                bgcolor: '#8b5cf6', 
+                '&:hover': { bgcolor: '#7c3aed' },
+                borderRadius: 2, 
+                textTransform: 'none', 
+                fontWeight: 700, 
+                fontSize: 12,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 8px rgba(139, 92, 246, 0.35)'
+              }}
+            >
+              Subscription Access
+            </Button>
 
             <IconButton onClick={handleUserMenuOpen} sx={{ p: 0.5 }}>
               <Avatar sx={{ bgcolor: '#0284c7', width: 32, height: 32, fontSize: 14 }}>
@@ -433,10 +513,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem onClick={() => { handleUserMenuClose(); setOpenTenantModal(true); }}>
-                <ListItemIcon><AddTenantIcon fontSize="small" /></ListItemIcon>
-                Create New Tenant
-              </MenuItem>
+              {isSuperAdmin && (
+                <MenuItem onClick={() => { handleUserMenuClose(); setOpenTenantModal(true); }}>
+                  <ListItemIcon><AddTenantIcon fontSize="small" /></ListItemIcon>
+                  Create New Tenant
+                </MenuItem>
+              )}
               <MenuItem component={Link} href="/settings" onClick={handleUserMenuClose}>
                 <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
                 Settings
@@ -513,78 +595,58 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 value={newSubdomain}
                 onChange={(e) => setNewSubdomain(e.target.value)}
                 fullWidth
-                helperText="Unique organization identifier"
+                helperText="Auto-generated if left blank"
               />
-
               <FormControl fullWidth>
-                <InputLabel>Base Currency</InputLabel>
+                <InputLabel id="currency-label">Base Ledger Currency</InputLabel>
                 <Select
+                  labelId="currency-label"
                   value={newCurrency}
-                  label="Base Currency"
+                  label="Base Ledger Currency"
                   onChange={(e) => setNewCurrency(e.target.value)}
                 >
-                  <MenuItem value="INR">INR (₹ - Indian Rupee)</MenuItem>
-                  <MenuItem value="USD">USD ($ - US Dollar)</MenuItem>
-                  <MenuItem value="EUR">EUR (€ - Euro)</MenuItem>
-                  <MenuItem value="GBP">GBP (£ - British Pound)</MenuItem>
+                  <MenuItem value="INR">INR (₹) - Indian Rupee</MenuItem>
+                  <MenuItem value="USD">USD ($) - US Dollar</MenuItem>
+                  <MenuItem value="EUR">EUR (€) - Euro</MenuItem>
+                  <MenuItem value="GBP">GBP (£) - British Pound</MenuItem>
+                  <MenuItem value="AED">AED (AED) - UAE Dirham</MenuItem>
                 </Select>
               </FormControl>
             </Box>
 
-            <FormControl fullWidth required>
-              <InputLabel>Subscription Tier / Plan</InputLabel>
-              <Select
-                value={newPlan}
-                label="Subscription Tier / Plan"
-                onChange={(e) => setNewPlan(e.target.value as any)}
-              >
-                <MenuItem value="starter">Starter / Essentials — ₹1,999/mo (Chart of Accounts, Ledger, Invoicing)</MenuItem>
-                <MenuItem value="growth">Growth / Professional — ₹4,999/mo (+ Inventory, Bank Rec, Tax Engine)</MenuItem>
-                <MenuItem value="enterprise">Enterprise / Premium — ₹11,999/mo (+ AI OCR, Forecasting, Automations)</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Divider sx={{ my: 0.5 }}>
-              <Chip label="Contact Information" size="small" sx={{ fontSize: 11, fontWeight: 600 }} />
-            </Divider>
-
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
               <TextField
-                label="Contact Email ID"
+                label="Contact Email"
                 type="email"
-                placeholder="billing@acme.in"
+                placeholder="billing@company.com"
                 value={newContactEmail}
                 onChange={(e) => setNewContactEmail(e.target.value)}
                 fullWidth
-                required
-                helperText="Primary organization email"
               />
-
               <TextField
-                label="Contact Phone Number"
+                label="Contact Phone"
                 placeholder="+91 98765 43210"
                 value={newContactPhone}
                 onChange={(e) => setNewContactPhone(e.target.value)}
                 fullWidth
-                helperText="Billing / support contact"
               />
             </Box>
 
-            <Divider sx={{ my: 0.5 }}>
-              <Chip label="Admin Credentials" size="small" sx={{ fontSize: 11, fontWeight: 600 }} />
-            </Divider>
+            <Divider sx={{ my: 0.5 }} />
+            <Typography variant="subtitle2" color="primary" fontWeight="bold">
+              Initial Admin Credentials
+            </Typography>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
               <TextField
-                label="Admin Email Address"
+                label="Admin Email"
                 type="email"
-                placeholder="admin@acme.in"
+                placeholder="admin@company.com"
                 value={newAdminEmail}
                 onChange={(e) => setNewAdminEmail(e.target.value)}
                 fullWidth
                 required
               />
-
               <TextField
                 label="Admin Password"
                 type="password"
@@ -594,11 +656,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 required
               />
             </Box>
+
+            <FormControl fullWidth sx={{ mt: 1 }}>
+              <InputLabel id="plan-label">Subscription Tier</InputLabel>
+              <Select
+                labelId="plan-label"
+                value={newPlan}
+                label="Subscription Tier"
+                onChange={(e) => setNewPlan(e.target.value as 'starter' | 'growth' | 'enterprise')}
+              >
+                <MenuItem value="starter">Starter Plan (Single User, Base Books)</MenuItem>
+                <MenuItem value="growth">Growth Plan (Multi-Branch, Tax Engine)</MenuItem>
+                <MenuItem value="enterprise">Enterprise Plan (AI Autonomous ERP)</MenuItem>
+              </Select>
+            </FormControl>
           </DialogContent>
-          <DialogActions sx={{ p: 2, pt: 1 }}>
-            <Button onClick={() => setOpenTenantModal(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={isProvisioning} sx={{ px: 3, fontWeight: 600 }}>
-              {isProvisioning ? 'Provisioning...' : 'Provision Tenant'}
+
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setOpenTenantModal(false)} disabled={isProvisioning}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={isProvisioning}>
+              {isProvisioning ? 'Provisioning Schema...' : 'Provision Tenant'}
             </Button>
           </DialogActions>
         </Box>

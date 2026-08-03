@@ -1,6 +1,7 @@
 import { AuthProvider } from '../context/AuthContext';
 import { TenantProvider } from '../context/TenantContext';
 import AppShell from '../components/AppShell';
+import NavigationProgress from '../components/NavigationProgress';
 
 export const metadata = {
   title: 'SmartBooks - Enterprise Autonomous AI Accounting Platform',
@@ -28,6 +29,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
       <body style={{ margin: 0, fontFamily: 'Roboto, sans-serif', backgroundColor: '#f8fafc' }} suppressHydrationWarning>
+        <NavigationProgress />
         <AuthProvider>
           <TenantProvider>
             <AppShell>

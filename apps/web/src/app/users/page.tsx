@@ -127,28 +127,53 @@ export default function TenantUsersPage() {
             <Typography variant="h4" fontWeight="800" color="text.primary" letterSpacing="-0.5px">
               Tenant User Management & RBAC
             </Typography>
+            <Chip
+              label={`${activeTenant.users.length} / ${activeTenant.seatLimit || 15} Seats Used`}
+              size="small"
+              color="primary"
+              variant="outlined"
+              sx={{ fontWeight: 800, fontSize: 11 }}
+            />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Active Organization: <strong style={{ color: '#0284c7' }}>{activeTenant.name}</strong> ({activeTenant.edition} · Schema: {activeTenant.schema})
+            Active Organization: <strong style={{ color: '#0284c7' }}>{activeTenant.name}</strong> ({activeTenant.edition} · Schema: {activeTenant.schema} · Plan: {(activeTenant.plan || 'growth').toUpperCase()})
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<AddUserIcon />}
-          onClick={() => setOpenAddModal(true)}
-          sx={{
-            borderRadius: 2.5,
-            px: 3,
-            py: 1.2,
-            bgcolor: '#0284c7',
-            '&:hover': { bgcolor: '#0369a1' },
-            fontWeight: 700,
-            textTransform: 'none'
-          }}
-        >
-          Add Tenant User
-        </Button>
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            component={Link}
+            href="/settings?tab=subscription"
+            variant="outlined"
+            size="small"
+            sx={{
+              borderRadius: 2.5,
+              px: 2.5,
+              py: 1,
+              fontWeight: 700,
+              textTransform: 'none'
+            }}
+          >
+            Subscription & Seats
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<AddUserIcon />}
+            onClick={() => setOpenAddModal(true)}
+            sx={{
+              borderRadius: 2.5,
+              px: 3,
+              py: 1.2,
+              bgcolor: '#0284c7',
+              '&:hover': { bgcolor: '#0369a1' },
+              fontWeight: 700,
+              textTransform: 'none'
+            }}
+          >
+            Add Tenant User
+          </Button>
+        </Stack>
       </Box>
 
       {/* Role Summary Badges */}

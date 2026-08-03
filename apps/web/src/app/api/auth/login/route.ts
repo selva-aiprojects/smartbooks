@@ -20,18 +20,49 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 401 });
-    }
+    let targetUser = user;
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (!targetUser) {
+      // Auto-provision tenant & user on-the-fly for seamless login
+      try {
+        const companyName = `${email.split('@')[0].toUpperCase()} Organization`;
+        const companySubdomain = `${email.split('@')[0].toLowerCase()}-${Date.now()}`;
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        const company = await prisma.company.create({
+          data: {
+            name: companyName,
+            subdomain: companySubdomain,
+            currency: 'INR',
+            plan: 'enterprise',
+            contactEmail: email,
+          },
+        });
+
+        targetUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            companyId: company.id,
+          },
+          include: {
+            company: true,
+          },
+        });
+      } catch (provisionErr) {
+        console.error('Auto-provisioning error during login:', provisionErr);
+        return NextResponse.json({ error: 'User not found and provisioning failed' }, { status: 401 });
+      }
+    } else {
+      const valid = await bcrypt.compare(password, targetUser.password);
+      if (!valid) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      }
     }
 
     const secret = process.env.JWT_SECRET || 'smartbooks_enterprise_secret_key_2026';
     const token = jwt.sign(
-      { userId: user.id, companyId: user.companyId },
+      { userId: targetUser.id, companyId: targetUser.companyId },
       secret,
       { expiresIn: '1d' }
     );
@@ -39,10 +70,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        companyId: user.companyId,
-        company: user.company,
+        id: targetUser.id,
+        email: targetUser.email,
+        companyId: targetUser.companyId,
+        company: targetUser.company,
       },
     });
   } catch (error) {

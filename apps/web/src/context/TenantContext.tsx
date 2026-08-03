@@ -44,6 +44,10 @@ export interface Tenant {
   gstin: string;
   currency: string;
   plan: 'starter' | 'growth' | 'enterprise';
+  seatLimit?: number;
+  billingCycle?: 'Monthly' | 'Annual';
+  nextBillingDate?: string;
+  subscriptionStatus?: 'Active' | 'Past Due' | 'Trial';
   metrics: TenantMetrics;
   users: TenantUser[];
 }
@@ -58,6 +62,10 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '27AAACA12341Z1',
     currency: '₹',
     plan: 'enterprise',
+    seatLimit: 50,
+    billingCycle: 'Annual',
+    nextBillingDate: '2027-01-10',
+    subscriptionStatus: 'Active',
     users: [
       { id: 'u-101', name: 'Vikram Mehta', email: 'owner@acme.com', role: 'Owner', status: 'Active', createdAt: '2026-01-10', lastLogin: '10 mins ago' },
       { id: 'u-102', name: 'Ananya Sharma', email: 'admin@acme.com', role: 'Tenant Admin', status: 'Active', createdAt: '2026-01-12', lastLogin: '1 hour ago' },
@@ -118,6 +126,10 @@ const INITIAL_TENANTS: Tenant[] = [
     gstin: '29BBBBN56782Z2',
     currency: '₹',
     plan: 'growth',
+    seatLimit: 15,
+    billingCycle: 'Annual',
+    nextBillingDate: '2027-02-01',
+    subscriptionStatus: 'Active',
     users: [
       { id: 'u-201', name: 'Priya Nair', email: 'owner@nexusretail.com', role: 'Owner', status: 'Active', createdAt: '2026-02-01', lastLogin: '5 mins ago' },
       { id: 'u-202', name: 'Rahul Deshmukh', email: 'admin@nexusretail.com', role: 'Tenant Admin', status: 'Active', createdAt: '2026-02-05', lastLogin: '30 mins ago' },
@@ -347,12 +359,16 @@ const INITIAL_TENANTS: Tenant[] = [
 
 interface TenantContextType {
   tenants: Tenant[];
+  visibleTenants: Tenant[];
   activeTenant: Tenant;
+  isSuperAdmin: boolean;
+  setIsSuperAdmin: (value: boolean) => void;
   switchTenant: (tenantId: string) => void;
   addTenant: (newTenant: Partial<Tenant>) => void;
   addTenantUser: (tenantId: string, user: Omit<TenantUser, 'id' | 'createdAt'>) => void;
   updateTenantUser: (tenantId: string, userId: string, updates: Partial<TenantUser>) => void;
   deleteTenantUser: (tenantId: string, userId: string) => void;
+  updateTenantPlan: (tenantId: string, plan: 'starter' | 'growth' | 'enterprise') => void;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -362,7 +378,21 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('smartbooks_tenants_v2');
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.map((t: Tenant) => {
+              const init = INITIAL_TENANTS.find(i => i.id === t.id);
+              return {
+                ...init,
+                ...t,
+                seatLimit: t.seatLimit || init?.seatLimit || 15,
+                plan: t.plan || init?.plan || 'growth',
+                users: t.users || init?.users || []
+              };
+            });
+          }
+        } catch (e) {}
       }
     }
     return INITIAL_TENANTS;
@@ -376,9 +406,32 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     return 'tenant-acme';
   });
 
+  const [isSuperAdmin, setIsSuperAdminState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('smartbooks_is_superadmin');
+      if (saved !== null) return saved === 'true';
+    }
+    return false; // Default: Strict Tenant Isolation (Regular User Mode)
+  });
+
+  const setIsSuperAdmin = (val: boolean) => {
+    setIsSuperAdminState(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('smartbooks_is_superadmin', String(val));
+    }
+  };
+
   const activeTenant = tenants.find(t => t.id === activeTenantId) || tenants[0];
 
+  // In strict tenant isolation mode (non-SuperAdmin), only the active tenant is visible
+  const visibleTenants = isSuperAdmin ? tenants : [activeTenant];
+
   const switchTenant = (tenantId: string) => {
+    // Restrict tenant switching: standard users cannot switch to unauthorized tenants
+    if (!isSuperAdmin && tenantId !== activeTenantId) {
+      console.warn(`[Security Alert] Access denied: User attempted to access unauthorized tenant (${tenantId}). Enforcing multi-tenant isolation.`);
+      return;
+    }
     const found = tenants.find(t => t.id === tenantId);
     if (found) {
       setActiveTenantId(tenantId);
@@ -485,15 +538,34 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     saveTenants(updated);
   };
 
+  const updateTenantPlan = (tenantId: string, plan: 'starter' | 'growth' | 'enterprise') => {
+    const seatLimits = { starter: 5, growth: 15, enterprise: 100 };
+    const updated = tenants.map(t => {
+      if (t.id === tenantId) {
+        return {
+          ...t,
+          plan,
+          seatLimit: seatLimits[plan]
+        };
+      }
+      return t;
+    });
+    saveTenants(updated);
+  };
+
   return (
     <TenantContext.Provider value={{ 
       tenants, 
+      visibleTenants,
       activeTenant, 
+      isSuperAdmin,
+      setIsSuperAdmin,
       switchTenant, 
       addTenant,
       addTenantUser,
       updateTenantUser,
-      deleteTenantUser
+      deleteTenantUser,
+      updateTenantPlan
     }}>
       {children}
     </TenantContext.Provider>
