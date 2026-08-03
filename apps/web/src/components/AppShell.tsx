@@ -361,17 +361,42 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <AddTenantIcon fontSize="small" />
             </IconButton>
 
-            <FormControl size="small" sx={{ minWidth: { sm: 140, md: 175 }, display: { xs: 'none', sm: 'block' } }}>
-              <Select
-                value={activePlan}
-                onChange={(e) => setActivePlan(e.target.value as any)}
-                sx={{ height: 34, fontSize: 13, fontWeight: 600 }}
+            {/* Active Subscription Plan Badge */}
+            <Chip 
+              label={`${activePlan.toUpperCase()} TIER`} 
+              size="small" 
+              sx={{ 
+                height: 28, 
+                fontWeight: 700, 
+                fontSize: 11,
+                bgcolor: activePlan === 'starter' ? 'rgba(16, 185, 129, 0.12)' : (activePlan === 'growth' ? 'rgba(2, 132, 199, 0.12)' : 'rgba(139, 92, 246, 0.12)'),
+                color: activePlan === 'starter' ? '#059669' : (activePlan === 'growth' ? '#0284c7' : '#7c3aed'),
+                border: '1px solid',
+                borderColor: activePlan === 'starter' ? '#10b981' : (activePlan === 'growth' ? '#0284c7' : '#8b5cf6'),
+                display: { xs: 'none', sm: 'inline-flex' }
+              }} 
+            />
+
+            {activePlan !== 'enterprise' && (
+              <Button
+                component={Link}
+                href="/#plans"
+                variant="contained"
+                size="small"
+                sx={{ 
+                  bgcolor: '#8b5cf6', 
+                  '&:hover': { bgcolor: '#7c3aed' },
+                  borderRadius: 2, 
+                  textTransform: 'none', 
+                  fontWeight: 700, 
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.35)'
+                }}
               >
-                <MenuItem value="starter">Starter / Essentials</MenuItem>
-                <MenuItem value="growth">Growth / Professional</MenuItem>
-                <MenuItem value="enterprise">Enterprise / Premium</MenuItem>
-              </Select>
-            </FormControl>
+                Upgrade Plan
+              </Button>
+            )}
 
             <IconButton onClick={handleUserMenuOpen} sx={{ p: 0.5 }}>
               <Avatar sx={{ bgcolor: '#0284c7', width: 32, height: 32, fontSize: 14 }}>
