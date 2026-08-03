@@ -230,13 +230,13 @@ export default function MarketingLandingPage() {
       {/* 3. Enterprise Social Proof */}
       <Box sx={{ py: 5, bgcolor: '#0b1120', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
         <Container maxWidth="lg">
-          <Typography variant="caption" display="block" align="center" sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, mb: 3 }}>
+          <Typography variant="caption" display="block" align="center" sx={{ color: '#38bdf8', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, mb: 3 }}>
             Trusted by CFOs and Finance Teams at Fast-Growing Companies
           </Typography>
 
           <Stack direction="row" spacing={{ xs: 3, md: 8 }} justifyContent="center" alignItems="center" flexWrap="wrap">
             {['Nexus Global', 'Vanguard India', 'Apex Digital', 'TechCraft Labs', 'OmniPay Solutions'].map((brand, i) => (
-              <Typography key={i} variant="h6" fontWeight="bold" sx={{ color: '#475569', opacity: 0.8, letterSpacing: '-0.5px' }}>
+              <Typography key={i} variant="h6" fontWeight="bold" sx={{ color: '#cbd5e1', letterSpacing: '-0.5px', opacity: 0.9 }}>
                 {brand}
               </Typography>
             ))}
@@ -336,13 +336,13 @@ export default function MarketingLandingPage() {
             </Typography>
 
             <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ mt: 4 }}>
-              <Typography variant="body2" sx={{ color: billingCycle === 'monthly' ? '#ffffff' : '#64748b', fontWeight: 600 }}>Monthly Billing</Typography>
+              <Typography variant="body2" sx={{ color: billingCycle === 'monthly' ? '#ffffff' : '#94a3b8', fontWeight: 600 }}>Monthly Billing</Typography>
               <Switch 
                 checked={billingCycle === 'annual'} 
                 onChange={(e) => setBillingCycle(e.target.checked ? 'annual' : 'monthly')} 
                 color="info"
               />
-              <Typography component="div" variant="body2" sx={{ color: billingCycle === 'annual' ? '#ffffff' : '#64748b', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
+              <Typography component="div" variant="body2" sx={{ color: billingCycle === 'annual' ? '#ffffff' : '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
                 Annual Billing <Chip label="Save 20%" color="success" size="small" sx={{ ml: 0.5, height: 20, fontSize: 10 }} />
               </Typography>
             </Stack>
