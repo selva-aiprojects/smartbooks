@@ -16,7 +16,13 @@ import {
   Divider, 
   Avatar,
   IconButton,
-  Switch
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import { 
   Security as SecurityIcon, 
@@ -34,7 +40,14 @@ import {
   Calculate as CalculateIcon,
   Shield as ShieldIcon,
   VerifiedUser as VerifiedIcon,
-  Lock as LockIcon
+  Lock as LockIcon,
+  Store as RetailIcon,
+  PrecisionManufacturing as ManufacturingIcon,
+  WorkOutline as ServicesIcon,
+  LocalHospital as HospitalIcon,
+  Restaurant as RestaurantIcon,
+  SwapHoriz as MigrateIcon,
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 
@@ -60,16 +73,16 @@ export default function MarketingLandingPage() {
                 <Typography variant="h6" fontWeight="800" sx={{ color: '#ffffff', letterSpacing: '-0.5px', fontSize: '1.25rem' }}>
                   SmartBooks
                 </Typography>
-                <Chip label="Enterprise" size="small" sx={{ bgcolor: 'rgba(2, 132, 199, 0.2)', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: 700, fontSize: 10.5, height: 22 }} />
+                <Chip label="AI Edition" size="small" sx={{ bgcolor: 'rgba(2, 132, 199, 0.2)', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: 700, fontSize: 10.5, height: 22 }} />
               </Box>
             </Box>
 
             <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <Link href="#features" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Features</Link>
-              <Link href="#architecture" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Architecture</Link>
+              <Link href="#editions" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Product Editions</Link>
+              <Link href="#why-smartbooks" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Why SmartBooks</Link>
+              <Link href="#outcomes" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Business Outcomes</Link>
+              <Link href="#migration" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>1-Day Migration</Link>
               <Link href="#plans" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Subscription Plans</Link>
-              <Link href="#roi-calculator" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>ROI Calculator</Link>
-              <Link href="#security" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Security & Trust</Link>
             </Stack>
 
             <Stack direction="row" spacing={2} alignItems="center">
@@ -92,30 +105,30 @@ export default function MarketingLandingPage() {
                   boxShadow: '0 4px 14px 0 rgba(2, 132, 199, 0.39)'
                 }}
               >
-                Launch Workspace
+                Start Free Trial
               </Button>
             </Stack>
           </Box>
         </Container>
       </Box>
 
-      {/* 2. Hero Section */}
+      {/* 2. Hero Section: Solves "I Don't Know Where My Money Goes" */}
       <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 12 }, pb: { xs: 8, md: 10 } }}>
         <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 5, bgcolor: '#1e293b', border: '1px solid #0284c7', mb: 3 }}>
               <AIIcon sx={{ color: '#38bdf8', fontSize: 18 }} />
               <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, letterSpacing: 0.5 }}>
-                NEXT-GEN AUTONOMOUS FINANCIAL ENGINE
+                SOLVES: "I DON'T KNOW WHERE MY MONEY GOES"
               </Typography>
             </Box>
 
             <Typography variant="h2" component="h1" fontWeight="800" color="#ffffff" sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' }, lineHeight: 1.15, letterSpacing: '-1px', mb: 2.5 }}>
-              The AI Bookkeeper Built for the <Box component="span" sx={{ background: 'linear-gradient(90deg, #38bdf8 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Future of Accounting</Box>
+              The Autonomous AI Engine Built for <Box component="span" sx={{ background: 'linear-gradient(90deg, #38bdf8 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Business Outcomes</Box>
             </Typography>
 
             <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 400, lineHeight: 1.6, mb: 4, fontSize: { xs: '1rem', md: '1.15rem' } }}>
-              Upload 500 invoices in seconds. SmartBooks AI auto-categorizes line items, posts balanced double-entry journals, audits GST mistakes, detects duplicate payments, and proactively alerts you when expenses anomaly surge.
+              Don't just buy software. Capture 500 invoices in under 2 minutes, auto-reconcile an entire month's bank statements, and know your business health before your accountant does.
             </Typography>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
@@ -136,14 +149,15 @@ export default function MarketingLandingPage() {
                   textTransform: 'none'
                 }}
               >
-                Launch Workspace
+                Start 14-Day Free Trial
               </Button>
 
               <Button 
                 component={Link} 
-                href="#plans" 
+                href="#migration" 
                 variant="outlined" 
                 size="large"
+                startIcon={<MigrateIcon />}
                 sx={{ 
                   borderRadius: 2.5, 
                   px: 3.5, 
@@ -156,19 +170,19 @@ export default function MarketingLandingPage() {
                   textTransform: 'none'
                 }}
               >
-                Explore Plans (in ₹)
+                Switch from Tally in 1 Day
               </Button>
             </Stack>
 
             <Stack direction="row" spacing={3} alignItems="center">
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">100% Automated Journal Posting</Typography>
+                <Typography variant="caption" color="#cbd5e1">1-Day Zero Downtime Migration</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">GST Mismatch & Audit Engine</Typography>
+                <Typography variant="caption" color="#cbd5e1">100% Free White-Glove Setup</Typography>
               </Box>
             </Stack>
           </Grid>
@@ -192,30 +206,30 @@ export default function MarketingLandingPage() {
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f59e0b' }} />
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
-                <Chip label="Autonomous AI Bookkeeper" color="primary" size="small" sx={{ fontWeight: 700 }} />
+                <Chip label="Autonomous AI Copilot" color="primary" size="small" sx={{ fontWeight: 700 }} />
               </Box>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
-                  <Typography variant="caption" color="#94a3b8">Bulk Invoices Ingested</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#38bdf8" sx={{ mt: 0.5 }}>500 Items</Typography>
-                  <Typography variant="caption" color="#10b981">Auto-mapped in 4.2 sec</Typography>
+                  <Typography variant="caption" color="#94a3b8">500 Invoices Ingested</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="#38bdf8" sx={{ mt: 0.5 }}>1.8 Minutes</Typography>
+                  <Typography variant="caption" color="#10b981">Auto-mapped in GL</Typography>
                 </Box>
 
                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
                   <Typography variant="caption" color="#94a3b8">Duplicate Payments Shield</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#10b981" sx={{ mt: 0.5 }}>₹14,500 Blocked</Typography>
-                  <Typography variant="caption" color="#38bdf8">Duplicate Bill #9842 Catch</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="#10b981" sx={{ mt: 0.5 }}>₹14,500 Saved</Typography>
+                  <Typography variant="caption" color="#38bdf8">Duplicate Bill #9842 Blocked</Typography>
                 </Box>
               </Box>
 
               <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(2, 132, 199, 0.1)', border: '1px solid #0284c7' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                   <AIIcon sx={{ color: '#38bdf8' }} />
-                  <Typography variant="subtitle2" fontWeight="bold" color="#f8fafc">Proactive Autonomous AI Copilot Alert</Typography>
+                  <Typography variant="subtitle2" fontWeight="bold" color="#f8fafc">Proactive Business Intelligence Alert</Typography>
                 </Box>
                 <Typography variant="body2" color="#cbd5e1" sx={{ fontWeight: 500 }}>
-                  "⚠️ Warning: Your Electricity & Utilities expense increased by 24% this month (₹42,500 vs 3-month avg ₹34,200). 18% unclaimed GST Input Credit detected."
+                  "💡 Proactive Alert: Your Electricity & Utilities expense increased by 24% this month (₹42,500 vs 3-month avg ₹34,200). ₹18,400 unclaimed GST Input Credit detected."
                 </Typography>
               </Paper>
             </Paper>
@@ -223,8 +237,210 @@ export default function MarketingLandingPage() {
         </Grid>
       </Container>
 
-      {/* 4. Core Business Outcomes Showcase Section */}
-      <Container id="features" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+      {/* 3. Pillar 1: "Who Is This For?" — Industry-Tailored Product Editions */}
+      <Box id="editions" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#0b1120', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
+            <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              WHO IS THIS FOR?
+            </Typography>
+            <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
+              Don't Buy One-Size-Fits-All Accounting. Choose Your Industry Edition.
+            </Typography>
+            <Typography variant="body1" color="#94a3b8">
+              Purpose-built accounting modules tailored for the specific workflows of Retail, Manufacturing, Services, Healthcare, and Restaurants.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            {[
+              {
+                icon: <RetailIcon sx={{ fontSize: 36, color: '#38bdf8' }} />,
+                title: 'Retail Edition',
+                subtitle: 'For Stores, Supermarkets & E-Commerce',
+                features: ['Barcode Scanner Integration', 'Point-of-Sale (POS) Billing', 'Multi-Branch Stock Valuation', 'Real-Time Inventory & GST']
+              },
+              {
+                icon: <ManufacturingIcon sx={{ fontSize: 36, color: '#10b981' }} />,
+                title: 'Manufacturing Edition',
+                subtitle: 'For Factories, Assemblies & Process Plants',
+                features: ['Bill of Materials (BOM) Costing', 'Raw Material Purchase MRP', 'Production Work-in-Progress (WIP)', 'Finished Goods Inventory']
+              },
+              {
+                icon: <ServicesIcon sx={{ fontSize: 36, color: '#8b5cf6' }} />,
+                title: 'Services & Consulting Edition',
+                subtitle: 'For Agencies, Tech Consultancies & IT Services',
+                features: ['Project Profitability Tracking', 'Milestone Invoicing', 'Employee Timesheets & Billables', 'Client Expense Reimbursables']
+              },
+              {
+                icon: <HospitalIcon sx={{ fontSize: 36, color: '#ec4899' }} />,
+                title: 'Healthcare & Hospital Edition',
+                subtitle: 'For Clinics, Hospitals & Pharmacies',
+                features: ['Patient Billing & Diagnostics', 'Pharmacy Stock Expiry Tracking', 'Departmental Revenue Reports', 'TPA Insurance Claim Match']
+              },
+              {
+                icon: <RestaurantIcon sx={{ fontSize: 36, color: '#f59e0b' }} />,
+                title: 'Restaurant & Hospitality Edition',
+                subtitle: 'For Restaurants, Cafes & Food Chains',
+                features: ['Recipe Unit Costing & F&B Stock', 'Kitchen Order Ticket (KDT) Sync', 'Daily Cash Register Audit', 'Swiggy/Zomato Payout Match']
+              }
+            ].map((edition, idx) => (
+              <Grid item xs={12} sm={6} md={idx === 4 ? 12 : 6} key={idx}>
+                <Paper
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    borderRadius: 3.5,
+                    bgcolor: '#1e293b',
+                    border: '1px solid #334155',
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                      borderColor: '#0284c7',
+                      transform: 'translateY(-4px)'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: '#0f172a' }}>
+                      {edition.icon}
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" fontWeight="800" color="#ffffff">
+                        {edition.title}
+                      </Typography>
+                      <Typography variant="caption" color="#38bdf8" fontWeight="600">
+                        {edition.subtitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                    {edition.features.map((feat, i) => (
+                      <Grid item xs={12} sm={6} key={i}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CheckIcon sx={{ color: '#10b981', fontSize: 16 }} />
+                          <Typography variant="body2" color="#cbd5e1" fontSize={13}>
+                            {feat}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* 4. Pillar 3: "Why SmartBooks?" — 1-Minute Competitor Comparison */}
+      <Container id="why-smartbooks" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+        <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
+          <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            WHY SMARTBOOKS INSTEAD OF LEGACY SOFTWARE?
+          </Typography>
+          <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
+            See How SmartBooks Outperforms Tally & Zoho in 1 Minute
+          </Typography>
+          <Typography variant="body1" color="#94a3b8">
+            Legacy desktop software requires manual line-by-line entry. SmartBooks automates 100% of journal postings with AI vision and proactive anomaly detection.
+          </Typography>
+        </Box>
+
+        <TableContainer component={Paper} sx={{ borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155' }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#0f172a' }}>
+                <TableCell sx={{ color: '#ffffff', fontWeight: 800, fontSize: 15, py: 2.5 }}>Capability / Workflow</TableCell>
+                <TableCell align="center" sx={{ color: '#94a3b8', fontWeight: 700, fontSize: 14 }}>❌ Tally Prime</TableCell>
+                <TableCell align="center" sx={{ color: '#94a3b8', fontWeight: 700, fontSize: 14 }}>❌ Zoho Books</TableCell>
+                <TableCell align="center" sx={{ color: '#38bdf8', fontWeight: 800, fontSize: 15, bgcolor: 'rgba(2, 132, 199, 0.15)' }}>⚡ SmartBooks AI Engine</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {[
+                { feature: '500 Supplier Invoice Processing', tally: 'Manual Line-by-Line', zoho: 'Basic OCR (Slow)', smartbooks: '2 Minutes (Bulk AI Ingestion)' },
+                { feature: 'Bank Reconciliation', tally: 'Manual Entry', zoho: 'Manual Rule Setup', smartbooks: '100% Automated Matching' },
+                { feature: 'GST Mismatch & ITC Recovery', tally: 'Manual Audit', zoho: 'Basic Filing Only', smartbooks: 'AI GSTR-2B Audit & Catch' },
+                { feature: 'Duplicate Payment & Fraud Catch', tally: 'None (Leaks Profit)', zoho: 'None', smartbooks: 'AI Duplicate Shield Alert' },
+                { feature: 'Proactive Anomaly Alerts', tally: 'None', zoho: 'None', smartbooks: 'AI Alerts ("Electricity up 24%")' },
+                { feature: 'Migration Effort from Existing Software', tally: 'Complex Manual Setup', zoho: 'Data Lock-In', smartbooks: '1-Day Import + Free White-Glove' },
+              ].map((row, index) => (
+                <TableRow key={index} hover sx={{ '&:nth-of-type(even)': { bgcolor: 'rgba(15, 23, 42, 0.5)' } }}>
+                  <TableCell sx={{ color: '#f8fafc', fontWeight: 600, fontSize: 14 }}>{row.feature}</TableCell>
+                  <TableCell align="center" sx={{ color: '#ef4444', fontSize: 13.5 }}>{row.tally}</TableCell>
+                  <TableCell align="center" sx={{ color: '#f59e0b', fontSize: 13.5 }}>{row.zoho}</TableCell>
+                  <TableCell align="center" sx={{ color: '#10b981', fontWeight: 700, fontSize: 14, bgcolor: 'rgba(2, 132, 199, 0.08)' }}>
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <CheckIcon sx={{ fontSize: 16, color: '#10b981' }} />
+                      {row.smartbooks}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Container>
+
+      {/* 5. Pillar 4: "Why Now?" — Frictionless 1-Day Switch */}
+      <Box id="migration" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#070a12', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
+        <Container maxWidth="lg">
+          <Paper sx={{ p: { xs: 4, md: 6 }, borderRadius: 4, background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #0284c7' }}>
+            <Grid container spacing={4} alignItems="center">
+              <Grid item xs={12} md={7}>
+                <Chip label="WHY NOW?" color="primary" size="small" sx={{ fontWeight: 800, mb: 2 }} />
+                <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mb: 2 }}>
+                  Switch from Tally or Zoho in 1 Day with Zero Downtime
+                </Typography>
+                <Typography variant="body1" color="#94a3b8" sx={{ mb: 3, lineHeight: 1.6 }}>
+                  Scared of migration headaches? SmartBooks provides 1-Click Tally XML & CSV data importers along with 100% Free White-Glove migration support. Your team suffers zero operational downtime.
+                </Typography>
+
+                <Stack spacing={1.5}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <CheckIcon sx={{ color: '#10b981' }} />
+                    <Typography variant="body2" color="#e2e8f0">Import Chart of Accounts, Customers, Vendors & Past Transactions in 1 Click</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <CheckIcon sx={{ color: '#10b981' }} />
+                    <Typography variant="body2" color="#e2e8f0">Parallel Run Guarantee — Keep Tally active until your team is 100% confident</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <CheckIcon sx={{ color: '#10b981' }} />
+                    <Typography variant="body2" color="#e2e8f0">Dedicated Migration Specialist assigned to your business for free</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} md={5}>
+                <Paper sx={{ p: 4, borderRadius: 3, bgcolor: '#0f172a', border: '1px solid #334155', textAlign: 'center' }}>
+                  <MigrateIcon sx={{ fontSize: 56, color: '#38bdf8', mb: 1.5 }} />
+                  <Typography variant="h5" fontWeight="800" color="#ffffff" sx={{ mb: 1 }}>
+                    Schedule Free 1-Day Migration
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8" sx={{ mb: 3 }}>
+                    Our solution team will import your ledger data and set up your Industry Edition today.
+                  </Typography>
+                  <Button 
+                    component={Link} 
+                    href="/login" 
+                    variant="contained" 
+                    fullWidth 
+                    size="large" 
+                    sx={{ bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' }, py: 1.5, fontWeight: 700, textTransform: 'none' }}
+                  >
+                    Schedule Free Migration
+                  </Button>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Container>
+      </Box>
+
+      {/* 6. Core Business Outcomes Showcase Section */}
+      <Container id="outcomes" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
         <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
           <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
             DRIVE MEASURABLE BUSINESS OUTCOMES
@@ -330,194 +546,7 @@ export default function MarketingLandingPage() {
         </Grid>
       </Container>
 
-      {/* 5. Subscription Matrix Section (in INR ₹) */}
-      <Box id="plans" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#0b1120', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', maxWidth: 700, mx: 'auto', mb: 6 }}>
-            <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-              Transparent Subscription Plans (in ₹ INR)
-            </Typography>
-            <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
-              Choose the Right Plan for Your Scale
-            </Typography>
-            <Typography variant="body1" color="#94a3b8">
-              Predictable pricing in Indian Rupees designed to support small businesses, growing companies, and enterprises.
-            </Typography>
-
-            <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ mt: 4 }}>
-              <Typography variant="body2" sx={{ color: billingCycle === 'monthly' ? '#ffffff' : '#94a3b8', fontWeight: 600 }}>Monthly Billing</Typography>
-              <Switch 
-                checked={billingCycle === 'annual'} 
-                onChange={(e) => setBillingCycle(e.target.checked ? 'annual' : 'monthly')} 
-                color="info"
-              />
-              <Typography component="div" variant="body2" sx={{ color: billingCycle === 'annual' ? '#ffffff' : '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
-                Annual Billing <Chip label="Save 20%" color="success" size="small" sx={{ ml: 0.5, height: 20, fontSize: 10 }} />
-              </Typography>
-            </Stack>
-          </Box>
-
-          <Grid container spacing={4} alignItems="stretch">
-            {/* Starter / Essentials */}
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <Box>
-                  <Chip label="Starter / Essentials" color="success" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
-                    {billingCycle === 'annual' ? '₹1,999' : '₹2,499'} 
-                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
-                  </Typography>
-                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
-                    Essential ledger, invoicing, and reporting tools for early-stage teams.
-                  </Typography>
-                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
-
-                  <Stack spacing={1.5}>
-                    {['Chart of Accounts', 'Journal Entries', 'Customer Invoices', 'Vendor Bills', 'Financial Reports', 'AI Assistant'].map((item, i) => (
-                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Box>
-
-                <Button component={Link} href="/login" variant="outlined" fullWidth sx={{ mt: 4, py: 1.2, color: '#ffffff', borderColor: '#334155', textTransform: 'none', fontWeight: 600 }}>
-                  Get Started
-                </Button>
-              </Paper>
-            </Grid>
-
-            {/* Growth / Professional */}
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '2px solid #0284c7', boxShadow: '0 0 25px rgba(2, 132, 199, 0.25)', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <Box sx={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', bgcolor: '#0284c7', color: '#fff', px: 2, py: 0.25, borderRadius: 5, fontSize: 11, fontWeight: 700 }}>
-                  MOST POPULAR
-                </Box>
-                <Box>
-                  <Chip label="Growth / Professional" color="info" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
-                    {billingCycle === 'annual' ? '₹4,999' : '₹5,999'} 
-                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
-                  </Typography>
-                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
-                    Advanced stock management, tax engines, and automated bank reconciliation.
-                  </Typography>
-                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
-
-                  <Stack spacing={1.5}>
-                    {['All Starter Features', 'Inventory & Stock Valuation', 'GST / VAT Tax Engine', '1-Click Bank Reconciliation', 'Online Payments & Collection Links'].map((item, i) => (
-                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckIcon sx={{ color: '#0284c7', fontSize: 18 }} />
-                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Box>
-
-                <Button component={Link} href="/login" variant="contained" fullWidth sx={{ mt: 4, py: 1.2, bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' }, textTransform: 'none', fontWeight: 600 }}>
-                  Start 14-Day Trial
-                </Button>
-              </Paper>
-            </Grid>
-
-            {/* Enterprise / Premium */}
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <Box>
-                  <Chip label="Enterprise / Premium" color="secondary" size="small" sx={{ mb: 2, fontWeight: 700 }} />
-                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
-                    {billingCycle === 'annual' ? '₹11,999' : '₹14,999'} 
-                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
-                  </Typography>
-                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
-                    AI OCR Vision scanner, cash runway forecasting, and banking API hub.
-                  </Typography>
-                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
-
-                  <Stack spacing={1.5}>
-                    {['All Growth Features', 'AI OCR Receipt Scanner', 'Financial Forecasting & Runway', 'Workflow Automation Rules', 'Banking APIs & Hub', 'Dedicated Account Manager'].map((item, i) => (
-                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Box>
-
-                <Button component={Link} href="/login" variant="outlined" fullWidth sx={{ mt: 4, py: 1.2, color: '#ffffff', borderColor: '#334155', textTransform: 'none', fontWeight: 600 }}>
-                  Contact Enterprise Sales
-                </Button>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* 6. Interactive Financial ROI Calculator (in ₹ INR) */}
-      <Container id="roi-calculator" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-        <Paper sx={{ p: { xs: 4, md: 6 }, borderRadius: 4, background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #334155' }}>
-          <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-                Financial ROI Calculator
-              </Typography>
-              <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
-                See How Much Time & Money SmartBooks Saves
-              </Typography>
-              <Typography variant="body1" color="#94a3b8" sx={{ mb: 4 }}>
-                Adjust team size and invoice volume to calculate your organization's monthly hours saved.
-              </Typography>
-
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="body2" color="#e2e8f0" fontWeight="600" gutterBottom>
-                  Finance & Accounting Team Size: <strong>{teamSize} Members</strong>
-                </Typography>
-                <Slider 
-                  value={teamSize} 
-                  onChange={(e, v) => setTeamSize(v as number)} 
-                  min={1} 
-                  max={25} 
-                  sx={{ color: '#38bdf8' }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="body2" color="#e2e8f0" fontWeight="600" gutterBottom>
-                  Monthly Invoices & Bills Processed: <strong>{monthlyInvoices} Items</strong>
-                </Typography>
-                <Slider 
-                  value={monthlyInvoices} 
-                  onChange={(e, v) => setMonthlyInvoices(v as number)} 
-                  min={20} 
-                  max={1000} 
-                  step={10} 
-                  sx={{ color: '#8b5cf6' }}
-                />
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 4, borderRadius: 3, bgcolor: '#0f172a', border: '1px solid #0284c7', textAlign: 'center' }}>
-                <CalculateIcon sx={{ fontSize: 48, color: '#38bdf8', mb: 1 }} />
-                <Typography variant="body2" color="#94a3b8" fontWeight="500">Estimated Monthly Productivity Gain</Typography>
-                <Typography variant="h2" fontWeight="800" color="#38bdf8" sx={{ my: 1 }}>
-                  {hoursSavedPerMonth} Hours
-                </Typography>
-                <Typography variant="body2" color="#10b981" fontWeight="600" sx={{ mb: 3 }}>
-                  ≈ ₹{estimatedRupeeSavings.toLocaleString('en-IN')} Saved / Month in Finance Labor
-                </Typography>
-
-                <Button component={Link} href="/login" variant="contained" fullWidth size="large" sx={{ bgcolor: '#0284c7', py: 1.5, fontWeight: 600, textTransform: 'none' }}>
-                  Start Saving Time with SmartBooks
-                </Button>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Container>
-
-      {/* 6.5 Enterprise Technical Architecture & Infrastructure (For Technical Buyers) */}
+      {/* 7. Enterprise Technical Architecture & Infrastructure */}
       <Box id="architecture" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#070a12', borderTop: '1px solid #1e293b' }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
@@ -624,44 +653,206 @@ export default function MarketingLandingPage() {
         </Container>
       </Box>
 
-      {/* 7. Security & Compliance Guarantee */}
-      <Box id="security" sx={{ py: 8, bgcolor: '#0b1120', borderTop: '1px solid #1e293b' }}>
+      {/* 8. Subscription Matrix Section (in INR ₹) */}
+      <Box id="plans" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#0b1120', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
         <Container maxWidth="lg">
-          <Grid container spacing={4} alignItems="center">
+          <Box sx={{ textAlign: 'center', maxWidth: 700, mx: 'auto', mb: 6 }}>
+            <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Transparent Subscription Plans (in ₹ INR)
+            </Typography>
+            <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
+              Choose the Right Plan for Your Scale
+            </Typography>
+            <Typography variant="body1" color="#94a3b8">
+              Predictable pricing in Indian Rupees designed to support small businesses, growing companies, and enterprises.
+            </Typography>
+
+            <Stack direction="row" spacing={2} justifyContent="center" alignItems="center" sx={{ mt: 4 }}>
+              <Typography variant="body2" sx={{ color: billingCycle === 'monthly' ? '#ffffff' : '#94a3b8', fontWeight: 600 }}>Monthly Billing</Typography>
+              <Switch 
+                checked={billingCycle === 'annual'} 
+                onChange={(e) => setBillingCycle(e.target.checked ? 'annual' : 'monthly')} 
+                color="info"
+              />
+              <Typography component="div" variant="body2" sx={{ color: billingCycle === 'annual' ? '#ffffff' : '#94a3b8', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
+                Annual Billing <Chip label="Save 20%" color="success" size="small" sx={{ ml: 0.5, height: 20, fontSize: 10 }} />
+              </Typography>
+            </Stack>
+          </Box>
+
+          <Grid container spacing={4} alignItems="stretch">
+            {/* Starter / Essentials */}
             <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ShieldIcon sx={{ fontSize: 40, color: '#10b981' }} />
+              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h6" fontWeight="bold" color="#ffffff">256-Bit SSL Encryption</Typography>
-                  <Typography variant="body2" color="#94a3b8">Bank-grade data encryption in transit and at rest.</Typography>
+                  <Chip label="Starter / Essentials" color="success" size="small" sx={{ mb: 2, fontWeight: 700 }} />
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
+                    {billingCycle === 'annual' ? '₹1,999' : '₹2,499'} 
+                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
+                    Essential ledger, invoicing, and reporting tools for early-stage teams.
+                  </Typography>
+                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
+
+                  <Stack spacing={1.5}>
+                    {['Chart of Accounts', 'Journal Entries', 'Customer Invoices', 'Vendor Bills', 'Financial Reports', 'AI Assistant'].map((item, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
                 </Box>
-              </Box>
+
+                <Button component={Link} href="/login" variant="outlined" fullWidth sx={{ mt: 4, py: 1.2, color: '#ffffff', borderColor: '#334155', textTransform: 'none', fontWeight: 600 }}>
+                  Start Trial
+                </Button>
+              </Paper>
             </Grid>
 
+            {/* Growth / Professional */}
             <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <VerifiedIcon sx={{ fontSize: 40, color: '#38bdf8' }} />
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" color="#ffffff">SOC2 Type II Compliant</Typography>
-                  <Typography variant="body2" color="#94a3b8">Audited data security and operational standards.</Typography>
+              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '2px solid #0284c7', boxShadow: '0 0 25px rgba(2, 132, 199, 0.25)', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Box sx={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', bgcolor: '#0284c7', color: '#fff', px: 2, py: 0.25, borderRadius: 5, fontSize: 11, fontWeight: 700 }}>
+                  MOST POPULAR
                 </Box>
-              </Box>
+                <Box>
+                  <Chip label="Growth / Professional" color="info" size="small" sx={{ mb: 2, fontWeight: 700 }} />
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
+                    {billingCycle === 'annual' ? '₹4,999' : '₹5,999'} 
+                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
+                    Advanced stock management, tax engines, and automated bank reconciliation.
+                  </Typography>
+                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
+
+                  <Stack spacing={1.5}>
+                    {['All Starter Features', 'Inventory & Stock Valuation', 'GST / VAT Tax Engine', '1-Click Bank Reconciliation', 'Online Payments & Collection Links'].map((item, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckIcon sx={{ color: '#0284c7', fontSize: 18 }} />
+                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+
+                <Button component={Link} href="/login" variant="contained" fullWidth sx={{ mt: 4, py: 1.2, bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' }, textTransform: 'none', fontWeight: 600 }}>
+                  Start 14-Day Trial
+                </Button>
+              </Paper>
             </Grid>
 
+            {/* Enterprise / Premium */}
             <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <LockIcon sx={{ fontSize: 40, color: '#8b5cf6' }} />
+              <Paper sx={{ p: 4, height: '100%', borderRadius: 4, bgcolor: '#1e293b', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h6" fontWeight="bold" color="#ffffff">Multi-Tenant Isolation</Typography>
-                  <Typography variant="body2" color="#94a3b8">Complete database organization data separation.</Typography>
+                  <Chip label="Enterprise / Premium" color="secondary" size="small" sx={{ mb: 2, fontWeight: 700 }} />
+                  <Typography variant="h4" fontWeight="bold" color="#ffffff">
+                    {billingCycle === 'annual' ? '₹11,999' : '₹14,999'} 
+                    <Typography component="span" variant="body2" color="#94a3b8"> / month</Typography>
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8" sx={{ mt: 1, mb: 3 }}>
+                    AI OCR Vision scanner, cash runway forecasting, and banking API hub.
+                  </Typography>
+                  <Divider sx={{ mb: 3, borderColor: '#334155' }} />
+
+                  <Stack spacing={1.5}>
+                    {['All Growth Features', 'AI OCR Receipt Scanner', 'Financial Forecasting & Runway', 'Workflow Automation Rules', 'Banking APIs & Hub', 'Dedicated Account Manager'].map((item, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
+                        <Typography variant="body2" color="#e2e8f0">{item}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
                 </Box>
-              </Box>
+
+                <Button component={Link} href="/login" variant="outlined" fullWidth sx={{ mt: 4, py: 1.2, color: '#ffffff', borderColor: '#334155', textTransform: 'none', fontWeight: 600 }}>
+                  Contact Enterprise Sales
+                </Button>
+              </Paper>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* 8. Footer */}
+      {/* 9. Final Call to Action Banner ("What's Next?") */}
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 10 } }}>
+        <Paper 
+          sx={{ 
+            p: { xs: 4, md: 8 }, 
+            borderRadius: 4, 
+            background: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)', 
+            textAlign: 'center',
+            boxShadow: '0 20px 40px -15px rgba(2, 132, 199, 0.4)'
+          }}
+        >
+          <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            WHAT'S NEXT?
+          </Typography>
+          <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2 }}>
+            Ready to Automate Your Bookkeeping & Protect Your Cashflow?
+          </Typography>
+          <Typography variant="body1" color="#cbd5e1" sx={{ maxWidth: 650, mx: 'auto', mb: 4, fontSize: { xs: '1rem', md: '1.15rem' } }}>
+            Get started in under 60 seconds with our 14-day free trial or schedule a 1-day white-glove migration from Tally.
+          </Typography>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} justifyContent="center" alignItems="center">
+            <Button
+              component={Link}
+              href="/login"
+              variant="contained"
+              size="large"
+              sx={{
+                bgcolor: '#ffffff',
+                color: '#0284c7',
+                '&:hover': { bgcolor: '#f8fafc' },
+                px: 4,
+                py: 1.5,
+                borderRadius: 2.5,
+                fontWeight: 800,
+                fontSize: '1.05rem',
+                textTransform: 'none'
+              }}
+            >
+              Start 14-Day Free Trial
+            </Button>
+
+            <Button
+              component={Link}
+              href="#migration"
+              variant="outlined"
+              size="large"
+              sx={{
+                color: '#ffffff',
+                borderColor: 'rgba(255,255,255,0.4)',
+                '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.1)' },
+                px: 4,
+                py: 1.5,
+                borderRadius: 2.5,
+                fontWeight: 700,
+                fontSize: '1.05rem',
+                textTransform: 'none'
+              }}
+            >
+              Schedule Free Migration
+            </Button>
+
+            <Button
+              component={Link}
+              href="/login"
+              variant="text"
+              size="large"
+              sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'none' }}
+            >
+              Book Live Demo →
+            </Button>
+          </Stack>
+        </Paper>
+      </Container>
+
+      {/* 10. Footer */}
       <Box sx={{ py: 6, bgcolor: '#070a12', borderTop: '1px solid #1e293b', color: '#94a3b8' }}>
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -671,7 +862,7 @@ export default function MarketingLandingPage() {
             </Box>
 
             <Typography variant="body2" color="#94a3b8">
-              © 2026 SmartBooks Enterprise Accounting Platform. All rights reserved.
+              © 2026 SmartBooks Enterprise AI Accounting Engine. All rights reserved.
             </Typography>
           </Box>
         </Container>
