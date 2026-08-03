@@ -64,29 +64,29 @@ export default function MarketingLandingPage() {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', overflowX: 'hidden' }}>
       
       {/* 1. Header Navigation Bar */}
-      <Box sx={{ borderBottom: '1px solid #1e293b', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 1100, backgroundColor: 'rgba(15, 23, 42, 0.85)' }}>
+      <Box sx={{ borderBottom: '1px solid #1e293b', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 1100, backgroundColor: 'rgba(15, 23, 42, 0.9)' }}>
         <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2 }}>
             <Box component={Link} href="/" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
-              <Box component="img" src="/logo-icon-badge.png" alt="SmartBooks Logo" sx={{ width: 42, height: 42, borderRadius: 2.5, boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)', objectFit: 'contain' }} />
+              <Box component="img" src="/logo-icon-badge.png" alt="SmartBooks Logo" sx={{ width: 40, height: 40, borderRadius: 2.5, boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)', objectFit: 'contain' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6" fontWeight="800" sx={{ color: '#ffffff', letterSpacing: '-0.5px', fontSize: '1.25rem' }}>
+                <Typography variant="h6" fontWeight="800" sx={{ color: '#ffffff', letterSpacing: '-0.5px', fontSize: '1.2rem', whiteSpace: 'nowrap' }}>
                   SmartBooks
                 </Typography>
-                <Chip label="AI Edition" size="small" sx={{ bgcolor: 'rgba(2, 132, 199, 0.2)', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: 700, fontSize: 10.5, height: 22 }} />
+                <Chip label="AI Edition" size="small" sx={{ bgcolor: 'rgba(2, 132, 199, 0.2)', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: 700, fontSize: 10, height: 20 }} />
               </Box>
             </Box>
 
-            <Stack direction="row" spacing={3} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-              <Link href="#editions" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Product Editions</Link>
-              <Link href="#why-smartbooks" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Why SmartBooks</Link>
-              <Link href="#outcomes" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Business Outcomes</Link>
-              <Link href="#migration" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>1-Day Migration</Link>
-              <Link href="#plans" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Subscription Plans</Link>
+            <Stack direction="row" spacing={{ md: 3, lg: 4 }} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              <Link href="#editions" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Editions</Link>
+              <Link href="#why-smartbooks" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Why SmartBooks</Link>
+              <Link href="#outcomes" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Outcomes</Link>
+              <Link href="#migration" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Migration</Link>
+              <Link href="#plans" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Pricing</Link>
             </Stack>
 
             <Stack direction="row" spacing={2} alignItems="center">
-              <Button component={Link} href="/login" sx={{ color: '#e2e8f0', textTransform: 'none', fontWeight: 600 }}>
+              <Button component={Link} href="/login" sx={{ color: '#e2e8f0', textTransform: 'none', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap' }}>
                 Sign In
               </Button>
 
@@ -101,7 +101,9 @@ export default function MarketingLandingPage() {
                   bgcolor: '#0284c7', 
                   '&:hover': { bgcolor: '#0369a1' },
                   fontWeight: 600,
+                  fontSize: 14,
                   textTransform: 'none',
+                  whiteSpace: 'nowrap',
                   boxShadow: '0 4px 14px 0 rgba(2, 132, 199, 0.39)'
                 }}
               >
@@ -113,21 +115,21 @@ export default function MarketingLandingPage() {
       </Box>
 
       {/* 2. Hero Section: Solves "I Don't Know Where My Money Goes" */}
-      <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 12 }, pb: { xs: 8, md: 10 } }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 6, md: 10 }, pb: { xs: 6, md: 10 } }}>
         <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 5, bgcolor: '#1e293b', border: '1px solid #0284c7', mb: 3 }}>
-              <AIIcon sx={{ color: '#38bdf8', fontSize: 18 }} />
-              <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, letterSpacing: 0.5 }}>
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 50, bgcolor: '#1e293b', border: '1px solid #0284c7', mb: 3 }}>
+              <AIIcon sx={{ color: '#38bdf8', fontSize: 16 }} />
+              <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, letterSpacing: 0.5, fontSize: 11 }}>
                 SOLVES: "I DON'T KNOW WHERE MY MONEY GOES"
               </Typography>
             </Box>
 
-            <Typography variant="h2" component="h1" fontWeight="800" color="#ffffff" sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' }, lineHeight: 1.15, letterSpacing: '-1px', mb: 2.5 }}>
+            <Typography variant="h2" component="h1" fontWeight="800" color="#ffffff" sx={{ fontSize: { xs: '2.25rem', md: '3.15rem' }, lineHeight: 1.2, letterSpacing: '-0.8px', mb: 2.5 }}>
               The Autonomous AI Engine Built for <Box component="span" sx={{ background: 'linear-gradient(90deg, #38bdf8 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Business Outcomes</Box>
             </Typography>
 
-            <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 400, lineHeight: 1.6, mb: 4, fontSize: { xs: '1rem', md: '1.15rem' } }}>
+            <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 400, lineHeight: 1.6, mb: 4, fontSize: { xs: '1rem', md: '1.1rem' } }}>
               Don't just buy software. Capture 500 invoices in under 2 minutes, auto-reconcile an entire month's bank statements, and know your business health before your accountant does.
             </Typography>
 
@@ -140,13 +142,14 @@ export default function MarketingLandingPage() {
                 endIcon={<ArrowForwardIcon />}
                 sx={{ 
                   borderRadius: 2.5, 
-                  px: 4, 
-                  py: 1.5, 
+                  px: 3.5, 
+                  py: 1.3, 
                   bgcolor: '#0284c7', 
                   '&:hover': { bgcolor: '#0369a1' },
-                  fontSize: '1rem',
+                  fontSize: '0.95rem',
                   fontWeight: 600,
-                  textTransform: 'none'
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Start 14-Day Free Trial
@@ -160,14 +163,15 @@ export default function MarketingLandingPage() {
                 startIcon={<MigrateIcon />}
                 sx={{ 
                   borderRadius: 2.5, 
-                  px: 3.5, 
-                  py: 1.5, 
+                  px: 3, 
+                  py: 1.3, 
                   color: '#cbd5e1', 
                   borderColor: '#334155',
                   '&:hover': { borderColor: '#38bdf8', bgcolor: 'rgba(56, 189, 248, 0.05)' },
-                  fontSize: '1rem',
+                  fontSize: '0.95rem',
                   fontWeight: 600,
-                  textTransform: 'none'
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Switch from Tally in 1 Day
@@ -177,12 +181,12 @@ export default function MarketingLandingPage() {
             <Stack direction="row" spacing={3} alignItems="center">
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">1-Day Zero Downtime Migration</Typography>
+                <Typography variant="caption" color="#cbd5e1" fontWeight="500">1-Day Zero Downtime Migration</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">100% Free White-Glove Setup</Typography>
+                <Typography variant="caption" color="#cbd5e1" fontWeight="500">100% Free White-Glove Setup</Typography>
               </Box>
             </Stack>
           </Grid>
@@ -192,44 +196,44 @@ export default function MarketingLandingPage() {
             <Paper 
               elevation={24} 
               sx={{ 
-                p: 3, 
+                p: 3.5, 
                 borderRadius: 4, 
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)', 
-                border: '1px solid rgba(56, 189, 248, 0.2)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)', 
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
                 position: 'relative'
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
-                <Chip label="Autonomous AI Copilot" color="primary" size="small" sx={{ fontWeight: 700 }} />
+                <Chip label="Autonomous AI Copilot" color="primary" size="small" sx={{ fontWeight: 700, fontSize: 11 }} />
               </Box>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
-                <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
-                  <Typography variant="caption" color="#94a3b8">500 Invoices Ingested</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#38bdf8" sx={{ mt: 0.5 }}>1.8 Minutes</Typography>
-                  <Typography variant="caption" color="#10b981">Auto-mapped in GL</Typography>
+                <Box sx={{ p: 2.25, borderRadius: 2.5, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
+                  <Typography variant="caption" color="#94a3b8" fontWeight="500">500 Invoices Ingested</Typography>
+                  <Typography variant="h5" fontWeight="800" color="#38bdf8" sx={{ mt: 0.5 }}>1.8 Minutes</Typography>
+                  <Typography variant="caption" color="#10b981" fontWeight="600">Auto-mapped in GL</Typography>
                 </Box>
 
-                <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
-                  <Typography variant="caption" color="#94a3b8">Duplicate Payments Shield</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#10b981" sx={{ mt: 0.5 }}>₹14,500 Saved</Typography>
-                  <Typography variant="caption" color="#38bdf8">Duplicate Bill #9842 Blocked</Typography>
+                <Box sx={{ p: 2.25, borderRadius: 2.5, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
+                  <Typography variant="caption" color="#94a3b8" fontWeight="500">Duplicate Payments Shield</Typography>
+                  <Typography variant="h5" fontWeight="800" color="#10b981" sx={{ mt: 0.5 }}>₹14,500 Saved</Typography>
+                  <Typography variant="caption" color="#38bdf8" fontWeight="600">Duplicate Bill #9842 Blocked</Typography>
                 </Box>
               </Box>
 
-              <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(2, 132, 199, 0.1)', border: '1px solid #0284c7' }}>
+              <Paper sx={{ p: 2.5, borderRadius: 2.5, bgcolor: 'rgba(2, 132, 199, 0.12)', border: '1px solid #0284c7' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <AIIcon sx={{ color: '#38bdf8' }} />
-                  <Typography variant="subtitle2" fontWeight="bold" color="#f8fafc">Proactive Business Intelligence Alert</Typography>
+                  <AIIcon sx={{ color: '#38bdf8', fontSize: 20 }} />
+                  <Typography variant="subtitle2" fontWeight="700" color="#f8fafc">Proactive Business Intelligence Alert</Typography>
                 </Box>
-                <Typography variant="body2" color="#cbd5e1" sx={{ fontWeight: 500 }}>
-                  "💡 Proactive Alert: Your Electricity & Utilities expense increased by 24% this month (₹42,500 vs 3-month avg ₹34,200). ₹18,400 unclaimed GST Input Credit detected."
+                <Typography variant="body2" color="#cbd5e1" sx={{ fontWeight: 500, lineHeight: 1.5, fontSize: '0.875rem' }}>
+                  "💡 Alert: Your Electricity & Utilities expense increased by 24% this month (₹42,500 vs 3-month avg ₹34,200). ₹18,400 unclaimed GST Input Credit detected."
                 </Typography>
               </Paper>
             </Paper>
