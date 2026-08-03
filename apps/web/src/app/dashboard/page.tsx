@@ -1,141 +1,512 @@
 'use client';
 
-import { Box, Typography, Card, CardContent, Button, Stack, Paper, Chip } from '@mui/material';
+import { useState } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Card, 
+  CardContent, 
+  Button, 
+  Stack, 
+  Paper, 
+  Chip, 
+  Grid,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Avatar,
+  LinearProgress,
+  IconButton,
+  Tooltip
+} from '@mui/material';
 import { 
   AddBox as AddIcon, 
   AccountBalance as AccountsIcon, 
   Assessment as ReportsIcon,
   TrendingUp as TrendingUpIcon,
-  AccountBalanceWallet as WalletIcon
+  TrendingDown as TrendingDownIcon,
+  AccountBalanceWallet as WalletIcon,
+  Receipt as InvoicesIcon,
+  Calculate as CalculateIcon,
+  Psychology as AIIcon,
+  Shield as ShieldIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  ArrowForward as ArrowForwardIcon,
+  Lightbulb as LightbulbIcon,
+  MoreVert as MoreVertIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
-import { BarChart, PieChart } from '@mui/x-charts';
+import { BarChart, PieChart, LineChart } from '@mui/x-charts';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [timeframe, setTimeframe] = useState<'this_month' | 'quarter' | 'ytd'>('this_month');
 
-  const revenueData = [
-    { month: 'Jan', revenue: 4000 },
-    { month: 'Feb', revenue: 6500 },
-    { month: 'Mar', revenue: 8200 },
-    { month: 'Apr', revenue: 9800 },
-    { month: 'May', revenue: 12500 },
-    { month: 'Jun', revenue: 15000 },
+  // 1. Today's Collections Data
+  const todaysCollections = 145000;
+  const todaysCollectionsGrowth = '+24% vs yesterday';
+
+  // 2. GST Due Data
+  const gstDueAmount = 48250;
+  const outputGST = 82500;
+  const inputTaxCredit = 34250;
+  const gstDueDate = '20th Aug';
+
+  // 3. Cash Position Data
+  const cashPosition = 1485000;
+  const bankBreakdown = [
+    { bank: 'HDFC Bank (Primary)', balance: 950000 },
+    { bank: 'ICICI Bank (Operational)', balance: 485000 },
+    { bank: 'Petty Cash', balance: 50000 },
   ];
 
-  const expenseData = [
-    { category: 'Salaries & Payroll', value: 8000 },
-    { category: 'General & Admin', value: 15000 },
-    { category: 'Utilities & Rent', value: 2000 },
+  // 4. Upcoming Vendor Payments
+  const upcomingVendorPayments = [
+    { vendor: 'AWS Cloud India', amount: 45000, dueIn: '2 Days', category: 'Software & Cloud' },
+    { vendor: 'Bharti Airtel Telecom', amount: 18500, dueIn: '4 Days', category: 'Utilities' },
+    { vendor: 'DLF Commercial Space', amount: 120000, dueIn: '6 Days', category: 'Rent' },
+  ];
+
+  // 5 & 6. Receivables & Payables Aging Data
+  const receivablesAging = [
+    { range: '0-30 Days', amount: 380000 },
+    { range: '31-60 Days', amount: 140000 },
+    { range: '61-90 Days', amount: 40000 },
+    { range: '>90 Days', amount: 20000 },
+  ];
+
+  const payablesAging = [
+    { range: '0-30 Days', amount: 240000 },
+    { range: '31-60 Days', amount: 70000 },
+    { range: '61-90 Days', amount: 20000 },
+    { range: '>90 Days', amount: 10000 },
+  ];
+
+  const totalReceivables = receivablesAging.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalPayables = payablesAging.reduce((acc, curr) => acc + curr.amount, 0);
+
+  // 7 & 8. Burn Rate & Cash Runway
+  const monthlyBurnRate = 185000;
+  const cashRunwayMonths = (cashPosition / monthlyBurnRate).toFixed(1);
+
+  // 9. Top 10 Customers Leaderboard
+  const top10Customers = [
+    { rank: 1, name: 'Tata Consultancy Services', revenue: 450000, invoices: 12, status: 'On Time' },
+    { rank: 2, name: 'Infosys Limited', revenue: 380000, invoices: 9, status: 'On Time' },
+    { rank: 3, name: 'Reliance Industries', revenue: 320000, invoices: 8, status: 'On Time' },
+    { rank: 4, name: 'Wipro Enterprise', revenue: 290000, invoices: 7, status: '1 Pending' },
+    { rank: 5, name: 'HCL Technologies', revenue: 240000, invoices: 6, status: 'On Time' },
+    { rank: 6, name: 'Tech Mahindra', revenue: 210000, invoices: 5, status: 'On Time' },
+    { rank: 7, name: 'Larsen & Toubro', revenue: 185000, invoices: 4, status: 'On Time' },
+    { rank: 8, name: 'Bharti Airtel Ltd', revenue: 160000, invoices: 4, status: '1 Pending' },
+    { rank: 9, name: 'Adani Group Enterprises', revenue: 140000, invoices: 3, status: 'On Time' },
+    { rank: 10, name: 'Flipkart India Pvt Ltd', revenue: 125000, invoices: 3, status: 'On Time' },
+  ];
+
+  // 10. AI Insights
+  const aiInsights = [
+    {
+      type: 'opportunity',
+      title: 'Early Vendor Payment Discount',
+      desc: 'Pay DLF Commercial (₹1.2L) before Aug 10 to claim 2% prompt payment discount (Save ₹2,400).'
+    },
+    {
+      type: 'tax',
+      title: 'Unclaimed GST Input Credit Identified',
+      desc: 'Scanned 4 AWS & Airtel bills with ₹34,250 ITC available to offset GSTR-3B liability before 20th Aug.'
+    },
+    {
+      type: 'runway',
+      title: 'Runway Extended by +2.4 Months',
+      desc: 'Strong collections of ₹1.45L today pushed total liquid reserves to 18.5 months of operational runway.'
+    }
   ];
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, pb: 4 }}>
+      {/* Top Header Controls */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" color="text.primary" gutterBottom>
+          <Typography variant="h4" fontWeight="800" color="text.primary" letterSpacing="-0.5px">
             Financial Dashboard
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Welcome back, <strong>{user?.email || 'admin@smartbooks.com'}</strong>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Organization: <strong>{user?.company?.name || 'SmartBooks Demo Corp'}</strong> ({user?.company?.currency || 'INR'} ₹)
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" gap={1}>
+          <Chip
+            label={timeframe === 'this_month' ? 'This Month' : (timeframe === 'quarter' ? 'This Quarter' : 'YTD 2026')}
+            onClick={() => setTimeframe(timeframe === 'this_month' ? 'quarter' : (timeframe === 'quarter' ? 'ytd' : 'this_month'))}
+            color="primary"
+            variant="outlined"
+            sx={{ fontWeight: 600, cursor: 'pointer', borderRadius: 2 }}
+          />
+
           <Button
             variant="contained"
             color="primary"
             startIcon={<AddIcon />}
             component={Link}
-            href="/journal/new"
-            sx={{ borderRadius: 2 }}
+            href="/invoices/new"
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
           >
-            New Journal Entry
+            Create Invoice
           </Button>
+
           <Button
             variant="outlined"
             startIcon={<AccountsIcon />}
             component={Link}
-            href="/accounts"
-            sx={{ borderRadius: 2 }}
+            href="/journal/new"
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
           >
-            Chart of Accounts
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ReportsIcon />}
-            component={Link}
-            href="/reports"
-            sx={{ borderRadius: 2 }}
-          >
-            Financial Reports
+            Post Journal
           </Button>
         </Stack>
       </Box>
 
-      {/* Top Metric KPI Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
-        <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #0284c7', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <Typography variant="body2" color="text.secondary" fontWeight="500">Cash on Hand</Typography>
-          <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: '#0f172a' }}>₹2,50,000</Typography>
-          <Chip icon={<TrendingUpIcon />} label="+12% this month" size="small" color="success" sx={{ mt: 1.5, fontSize: 11 }} />
-        </Paper>
-
-        <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #10b981', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <Typography variant="body2" color="text.secondary" fontWeight="500">Total Accounts Receivable</Typography>
-          <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: '#0f172a' }}>₹85,000</Typography>
-          <Chip label="2 Pending Invoices" size="small" color="info" sx={{ mt: 1.5, fontSize: 11 }} />
-        </Paper>
-
-        <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #ef4444', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <Typography variant="body2" color="text.secondary" fontWeight="500">Accounts Payable</Typography>
-          <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: '#0f172a' }}>₹42,000</Typography>
-          <Chip label="Due in 15 days" size="small" color="warning" sx={{ mt: 1.5, fontSize: 11 }} />
-        </Paper>
-
-        <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #8b5cf6', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <Typography variant="body2" color="text.secondary" fontWeight="500">Net Profit (YTD)</Typography>
-          <Typography variant="h4" fontWeight="bold" sx={{ mt: 1, color: '#8b5cf6' }}>₹1,00,000</Typography>
-          <Chip label="Revenue ₹3.5L / Expense ₹2.5L" size="small" sx={{ mt: 1.5, fontSize: 11 }} />
-        </Paper>
-      </Box>
-
-      {/* Analytics Charts */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-        <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Monthly Revenue Trajectory ($)
-            </Typography>
-            <Box sx={{ height: 320 }}>
-              <BarChart
-                xAxis={[{ scaleType: 'band', data: revenueData.map(d => d.month) }]}
-                series={[{ data: revenueData.map(d => d.revenue), color: '#0284c7' }]}
-              />
+      {/* Row 1: Primary Liquid & Financial Position Cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* 1. Today's Collections */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #10b981', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight="600">Today's Collections</Typography>
+              <Avatar sx={{ bgcolor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', width: 34, height: 34 }}>
+                <TrendingUpIcon fontSize="small" />
+              </Avatar>
             </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Operating Expense Breakdown ($)
+            <Typography variant="h4" fontWeight="800" sx={{ mt: 1.5, color: '#0f172a' }}>
+              ₹{todaysCollections.toLocaleString('en-IN')}
             </Typography>
-            <Box sx={{ height: 320 }}>
-              <PieChart
-                series={[{
-                  data: expenseData.map((d, index) => ({
-                    id: index,
-                    value: d.value,
-                    label: d.category
-                  }))
-                }]}
-              />
+            <Chip label={todaysCollectionsGrowth} size="small" color="success" sx={{ mt: 1.5, fontSize: 11, fontWeight: 700 }} />
+          </Paper>
+        </Grid>
+
+        {/* 2. Cash Position */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #0284c7', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight="600">Cash Position</Typography>
+              <Avatar sx={{ bgcolor: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', width: 34, height: 34 }}>
+                <WalletIcon fontSize="small" />
+              </Avatar>
             </Box>
-          </CardContent>
-        </Card>
-      </Box>
+            <Typography variant="h4" fontWeight="800" sx={{ mt: 1.5, color: '#0f172a' }}>
+              ₹{cashPosition.toLocaleString('en-IN')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block', fontWeight: 500 }}>
+              Across HDFC, ICICI & Cash
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* 3. Total Receivables */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #38bdf8', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight="600">Total Receivables</Typography>
+              <Avatar sx={{ bgcolor: 'rgba(56, 189, 248, 0.15)', color: '#0284c7', width: 34, height: 34 }}>
+                <InvoicesIcon fontSize="small" />
+              </Avatar>
+            </Box>
+            <Typography variant="h4" fontWeight="800" sx={{ mt: 1.5, color: '#0f172a' }}>
+              ₹{totalReceivables.toLocaleString('en-IN')}
+            </Typography>
+            <Chip label="7 Outstanding Invoices" size="small" color="info" sx={{ mt: 1.5, fontSize: 11, fontWeight: 700 }} />
+          </Paper>
+        </Grid>
+
+        {/* 4. Total Payables */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2.5, borderRadius: 3, borderLeft: '5px solid #f59e0b', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Typography variant="body2" color="text.secondary" fontWeight="600">Total Payables</Typography>
+              <Avatar sx={{ bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#d97706', width: 34, height: 34 }}>
+                <ScheduleIcon fontSize="small" />
+              </Avatar>
+            </Box>
+            <Typography variant="h4" fontWeight="800" sx={{ mt: 1.5, color: '#0f172a' }}>
+              ₹{totalPayables.toLocaleString('en-IN')}
+            </Typography>
+            <Chip label="5 Pending Bills" size="small" color="warning" sx={{ mt: 1.5, fontSize: 11, fontWeight: 700 }} />
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Row 2: Secondary Operational KPI Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* 5. GST Due */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" fontWeight="600">GST Net Liability</Typography>
+                <Chip label={`Due ${gstDueDate}`} size="small" color="error" sx={{ height: 20, fontSize: 10, fontWeight: 700 }} />
+              </Box>
+              <Typography variant="h5" fontWeight="800" color="#ef4444">
+                ₹{gstDueAmount.toLocaleString('en-IN')}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Output ₹82.5k - Input ITC ₹34.25k
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 6. Upcoming Vendor Payments */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" fontWeight="600">Upcoming Vendor Pay</Typography>
+                <Chip label="Next 7 Days" size="small" sx={{ height: 20, fontSize: 10, bgcolor: '#fef3c7', color: '#b45309', fontWeight: 700 }} />
+              </Box>
+              <Typography variant="h5" fontWeight="800" color="#0f172a">
+                ₹1,83,500
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                3 Vendors Pending Approval
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 7. Burn Rate */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" fontWeight="600">Monthly Net Burn Rate</Typography>
+                <TrendingDownIcon sx={{ color: '#0284c7', fontSize: 18 }} />
+              </Box>
+              <Typography variant="h5" fontWeight="800" color="#0f172a">
+                ₹{monthlyBurnRate.toLocaleString('en-IN')}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                OpEx minus Recurring Revenue
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 8. Cash Runway */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary" fontWeight="600">Estimated Cash Runway</Typography>
+                <Chip label="Healthy" size="small" color="success" sx={{ height: 20, fontSize: 10, fontWeight: 700 }} />
+              </Box>
+              <Typography variant="h5" fontWeight="800" color="#8b5cf6">
+                {cashRunwayMonths} Months
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Based on ₹14.85L Liquid Reserves
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Row 3: Analytics Graphs & Breakdown */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Receivables & Payables Aging Bar Chart */}
+        <Grid item xs={12} md={8}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" fontWeight="700" color="text.primary">
+                    Receivables & Payables Aging Analysis (₹)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Compare outstanding customer receivables vs vendor payables across aging brackets
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={1}>
+                  <Chip label="Receivables ₹5.8L" size="small" sx={{ bgcolor: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', fontWeight: 700 }} />
+                  <Chip label="Payables ₹3.4L" size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontWeight: 700 }} />
+                </Stack>
+              </Box>
+
+              <Box sx={{ height: 310 }}>
+                <BarChart
+                  xAxis={[{ scaleType: 'band', data: ['0-30 Days', '31-60 Days', '61-90 Days', '>90 Days'] }]}
+                  series={[
+                    { label: 'Receivables (AR)', data: receivablesAging.map(d => d.amount), color: '#0284c7' },
+                    { label: 'Payables (AP)', data: payablesAging.map(d => d.amount), color: '#f59e0b' }
+                  ]}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bank Liquidity Breakdown Pie Chart */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight="700" color="text.primary" gutterBottom>
+                Liquid Bank Reserves Distribution
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                Real-time bank account balances
+              </Typography>
+
+              <Box sx={{ height: 260, display: 'flex', justifyContent: 'center' }}>
+                <PieChart
+                  series={[{
+                    data: bankBreakdown.map((b, index) => ({
+                      id: index,
+                      value: b.balance,
+                      label: b.bank.split(' ')[0]
+                    })),
+                    innerRadius: 40,
+                    outerRadius: 90,
+                    paddingAngle: 3
+                  }]}
+                />
+              </Box>
+
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                {bankBreakdown.map((b, i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight="600">{b.bank}</Typography>
+                    <Typography variant="caption" fontWeight="700" color="#0f172a">₹{b.balance.toLocaleString('en-IN')}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Row 4: Top 10 Customers & AI Insights */}
+      <Grid container spacing={3}>
+        {/* 9. Top 10 Customers Leaderboard */}
+        <Grid item xs={12} md={7}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" fontWeight="700" color="text.primary">
+                    Top 10 Customers Leaderboard
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Ranked by total billed invoice revenue and payment performance
+                  </Typography>
+                </Box>
+                <Button component={Link} href="/invoices" size="small" endIcon={<ArrowForwardIcon />} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                  View All
+                </Button>
+              </Box>
+
+              <TableContainer sx={{ maxHeight: 380 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Rank</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Customer Name</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: 12 }}>Revenue (₹)</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>Invoices</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, fontSize: 12 }}>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {top10Customers.map((cust) => (
+                      <TableRow key={cust.rank} hover>
+                        <TableCell sx={{ fontWeight: 700, color: '#0284c7', fontSize: 12 }}>#{cust.rank}</TableCell>
+                        <TableCell sx={{ fontWeight: 600, fontSize: 12 }}>{cust.name}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: 12 }}>
+                          ₹{cust.revenue.toLocaleString('en-IN')}
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontSize: 12 }}>{cust.invoices}</TableCell>
+                        <TableCell align="center">
+                          <Chip 
+                            label={cust.status} 
+                            size="small" 
+                            color={cust.status === 'On Time' ? 'success' : 'warning'} 
+                            sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 10. AI Insights & Recommendations Panel */}
+        <Grid item xs={12} md={5}>
+          <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', height: '100%', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <Avatar sx={{ bgcolor: 'rgba(56, 189, 248, 0.2)', border: '1px solid #0284c7' }}>
+                  <AIIcon sx={{ color: '#38bdf8' }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="700" color="#ffffff">
+                    SmartBooks AI Financial Insights
+                  </Typography>
+                  <Typography variant="caption" color="#94a3b8">
+                    Continuous ledger analysis & tax optimization
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Stack spacing={2} sx={{ mt: 3 }}>
+                {aiInsights.map((insight, idx) => (
+                  <Paper 
+                    key={idx} 
+                    sx={{ 
+                      p: 2, 
+                      borderRadius: 2.5, 
+                      bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                      border: '1px solid rgba(56, 189, 248, 0.25)' 
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <LightbulbIcon sx={{ color: insight.type === 'opportunity' ? '#f59e0b' : (insight.type === 'tax' ? '#10b981' : '#38bdf8'), fontSize: 18 }} />
+                      <Typography variant="subtitle2" fontWeight="700" color="#f8fafc">
+                        {insight.title}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="#cbd5e1" sx={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                      {insight.desc}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Stack>
+
+              {/* Upcoming Vendor Payments Widget */}
+              <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <Typography variant="subtitle2" fontWeight="700" color="#38bdf8" sx={{ mb: 1 }}>
+                  Upcoming Vendor Due List (Next 7 Days)
+                </Typography>
+                <Stack spacing={1}>
+                  {upcomingVendorPayments.map((v, i) => (
+                    <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" color="#cbd5e1">{v.vendor} ({v.dueIn})</Typography>
+                      <Typography variant="caption" fontWeight="700" color="#f8fafc">₹{v.amount.toLocaleString('en-IN')}</Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

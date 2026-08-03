@@ -103,19 +103,19 @@ export default function MarketingLandingPage() {
       <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 12 }, pb: { xs: 8, md: 10 } }}>
         <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 5, bgcolor: '#1e293b', border: '1px solid #334155', mb: 3 }}>
-              <StarIcon sx={{ color: '#f59e0b', fontSize: 18 }} />
-              <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 600 }}>
-                Rated #1 Autonomous Accounting Platform for 2026
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 5, bgcolor: '#1e293b', border: '1px solid #0284c7', mb: 3 }}>
+              <AIIcon sx={{ color: '#38bdf8', fontSize: 18 }} />
+              <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, letterSpacing: 0.5 }}>
+                NEXT-GEN AUTONOMOUS FINANCIAL ENGINE
               </Typography>
             </Box>
 
-            <Typography variant="h2" component="h1" fontWeight="800" sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' }, lineHeight: 1.15, letterSpacing: '-1px', mb: 2.5 }}>
-              The Intelligent Financial Engine for <Box component="span" sx={{ background: 'linear-gradient(90deg, #38bdf8 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Indian Enterprises</Box>
+            <Typography variant="h2" component="h1" fontWeight="800" color="#ffffff" sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' }, lineHeight: 1.15, letterSpacing: '-1px', mb: 2.5 }}>
+              The AI Bookkeeper Built for the <Box component="span" sx={{ background: 'linear-gradient(90deg, #38bdf8 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Future of Accounting</Box>
             </Typography>
 
             <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 400, lineHeight: 1.6, mb: 4, fontSize: { xs: '1rem', md: '1.15rem' } }}>
-              Streamline general ledgers, automate GST/VAT invoicing, track vendor payables, and run real-time bank reconciliation with AI OCR vision and continuous compliance.
+              Upload 500 invoices in seconds. SmartBooks AI auto-categorizes line items, posts balanced double-entry journals, audits GST mistakes, detects duplicate payments, and proactively alerts you when expenses anomaly surge.
             </Typography>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
@@ -136,7 +136,7 @@ export default function MarketingLandingPage() {
                   textTransform: 'none'
                 }}
               >
-                Start Free 14-Day Trial
+                Launch Workspace
               </Button>
 
               <Button 
@@ -163,17 +163,12 @@ export default function MarketingLandingPage() {
             <Stack direction="row" spacing={3} alignItems="center">
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">No Credit Card Required</Typography>
+                <Typography variant="caption" color="#cbd5e1">100% Automated Journal Posting</Typography>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">GST & GAAP Compliant</Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                <Typography variant="caption" color="#cbd5e1">SOC2 Type II Certified</Typography>
+                <Typography variant="caption" color="#cbd5e1">GST Mismatch & Audit Engine</Typography>
               </Box>
             </Stack>
           </Grid>
@@ -197,53 +192,36 @@ export default function MarketingLandingPage() {
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f59e0b' }} />
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
-                <Chip label="Live Production Suite" color="success" size="small" />
+                <Chip label="Autonomous AI Bookkeeper" color="primary" size="small" sx={{ fontWeight: 700 }} />
               </Box>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
-                  <Typography variant="caption" color="#94a3b8">Total Monthly Revenue</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#38bdf8" sx={{ mt: 0.5 }}>₹12,45,000</Typography>
-                  <Typography variant="caption" color="#10b981">+18.4% vs last month</Typography>
+                  <Typography variant="caption" color="#94a3b8">Bulk Invoices Ingested</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="#38bdf8" sx={{ mt: 0.5 }}>500 Items</Typography>
+                  <Typography variant="caption" color="#10b981">Auto-mapped in 4.2 sec</Typography>
                 </Box>
 
                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#0f172a', border: '1px solid #1e293b' }}>
-                  <Typography variant="caption" color="#94a3b8">Bank Reconciliation</Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#10b981" sx={{ mt: 0.5 }}>100% Matched</Typography>
-                  <Typography variant="caption" color="#38bdf8">142 Entries Cleared</Typography>
+                  <Typography variant="caption" color="#94a3b8">Duplicate Payments Shield</Typography>
+                  <Typography variant="h5" fontWeight="bold" color="#10b981" sx={{ mt: 0.5 }}>₹14,500 Blocked</Typography>
+                  <Typography variant="caption" color="#38bdf8">Duplicate Bill #9842 Catch</Typography>
                 </Box>
               </Box>
 
               <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(2, 132, 199, 0.1)', border: '1px solid #0284c7' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                   <AIIcon sx={{ color: '#38bdf8' }} />
-                  <Typography variant="subtitle2" fontWeight="bold" color="#f8fafc">SmartBooks AI Assistant Log</Typography>
+                  <Typography variant="subtitle2" fontWeight="bold" color="#f8fafc">Proactive Autonomous AI Copilot Alert</Typography>
                 </Box>
-                <Typography variant="body2" color="#cbd5e1">
-                  "Scanned vendor bill from AWS India (₹14,500). Auto-mapped to GL Account 5020 (Software & Cloud) with 98% confidence."
+                <Typography variant="body2" color="#cbd5e1" sx={{ fontWeight: 500 }}>
+                  "⚠️ Warning: Your Electricity & Utilities expense increased by 24% this month (₹42,500 vs 3-month avg ₹34,200). 18% unclaimed GST Input Credit detected."
                 </Typography>
               </Paper>
             </Paper>
           </Grid>
         </Grid>
       </Container>
-
-      {/* 3. Enterprise Social Proof */}
-      <Box sx={{ py: 5, bgcolor: '#0b1120', borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b' }}>
-        <Container maxWidth="lg">
-          <Typography variant="caption" display="block" align="center" sx={{ color: '#38bdf8', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, mb: 3 }}>
-            Trusted by CFOs and Finance Teams at Fast-Growing Companies
-          </Typography>
-
-          <Stack direction="row" spacing={{ xs: 3, md: 8 }} justifyContent="center" alignItems="center" flexWrap="wrap">
-            {['Nexus Global', 'Vanguard India', 'Apex Digital', 'TechCraft Labs', 'OmniPay Solutions'].map((brand, i) => (
-              <Typography key={i} variant="h6" fontWeight="bold" sx={{ color: '#cbd5e1', letterSpacing: '-0.5px', opacity: 0.9 }}>
-                {brand}
-              </Typography>
-            ))}
-          </Stack>
-        </Container>
-      </Box>
 
       {/* 4. Core Feature Showcase Section */}
       <Container id="features" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>

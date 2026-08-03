@@ -32,7 +32,7 @@ export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: 'Hello! I am your SmartBooks AI Financial Assistant. I can answer questions about your balance sheet, audit transactions, or automatically categorize operating expenses.',
+      text: 'Hello! I am your Autonomous SmartBooks AI Copilot. I can bulk-ingest 500+ invoices, auto-create double-entry journals, catch GST input tax credit mistakes, block duplicate payments, and proactively alert you when utility expenses anomaly-surge (e.g. "Your electricity expense increased 24% this month").',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
