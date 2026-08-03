@@ -223,51 +223,63 @@ export default function MarketingLandingPage() {
         </Grid>
       </Container>
 
-      {/* 4. Core Feature Showcase Section */}
+      {/* 4. Core Business Outcomes Showcase Section */}
       <Container id="features" maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-        <Box sx={{ textAlign: 'center', maxWidth: 700, mx: 'auto', mb: 8 }}>
+        <Box sx={{ textAlign: 'center', maxWidth: 750, mx: 'auto', mb: 8 }}>
           <Typography variant="caption" sx={{ color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-            Enterprise Capabilities
+            DRIVE MEASURABLE BUSINESS OUTCOMES
           </Typography>
           <Typography variant="h3" fontWeight="800" color="#ffffff" sx={{ mt: 1, mb: 2, letterSpacing: '-0.5px' }}>
-            Everything Needed to Run Modern Financial Operations
+            Stop Buying Software. Start Buying Results.
           </Typography>
           <Typography variant="body1" color="#94a3b8">
-            From double-entry journal balance enforcement to generative AI receipt OCR scanning and automated bank feed reconciliation.
+            Save time, eliminate manual bookkeeping errors, capture every rupee of unclaimed tax credit, and know your business health before your accountant does.
           </Typography>
         </Box>
 
         <Grid container spacing={4}>
           {[
             {
-              icon: <AccountsIcon sx={{ fontSize: 32, color: '#38bdf8' }} />,
-              title: 'Double-Entry General Ledger',
-              description: 'Strict GAAP double-entry ledger enforcement ensures total Debits equal total Credits for 100% mathematical precision.'
+              icon: <AIIcon sx={{ fontSize: 32, color: '#38bdf8' }} />,
+              title: 'Capture 500 Supplier Invoices in Under 2 Minutes',
+              outcomeTag: 'SAVINGS: 18 HOURS / MO',
+              tagColor: '#0284c7',
+              description: 'Upload bulk PDF or photo invoices in one drop. Autonomous AI parses line items, maps GL accounts, and auto-posts balanced journals in 4.2 seconds.'
             },
             {
-              icon: <InvoicesIcon sx={{ fontSize: 32, color: '#10b981' }} />,
-              title: 'Invoices & GST Bills Management',
-              description: 'Create customer invoices with GST calculations, track payment status, record vendor bills, and auto-post revenue journal entries.'
+              icon: <AutoFixIcon sx={{ fontSize: 32, color: '#10b981' }} />,
+              title: "Reconcile an Entire Month's Bank Statement Automatically",
+              outcomeTag: '100% MATCHING',
+              tagColor: '#10b981',
+              description: 'Connect bank feeds and automatically match hundreds of bank transactions against general ledger entries with zero manual effort and 100% precision.'
             },
             {
-              icon: <AutoFixIcon sx={{ fontSize: 32, color: '#8b5cf6' }} />,
-              title: '1-Click Bank Reconciliation',
-              description: 'Import bank CSV feeds and automatically match bank transactions against posted journal entries with zero manual effort.'
+              icon: <TrendingUpIcon sx={{ fontSize: 32, color: '#8b5cf6' }} />,
+              title: 'Know Your Business Health Before Your Accountant Does',
+              outcomeTag: 'REAL-TIME CLARITY',
+              tagColor: '#8b5cf6',
+              description: 'Real-time Executive Dashboard gives CFOs and Founders instant clarity on net cash position, monthly burn rate, and 18-month liquid runway.'
             },
             {
-              icon: <AIIcon sx={{ fontSize: 32, color: '#f59e0b' }} />,
-              title: 'AI OCR Vision & Bookkeeper',
-              description: 'Scan PDF or photo receipts. SmartBooks AI extracts line items, totals, vendor details, and maps them to your Chart of Accounts.'
+              icon: <AccountsIcon sx={{ fontSize: 32, color: '#f59e0b' }} />,
+              title: 'Eliminate 99% of Bookkeeping Errors & GST Mismatches',
+              outcomeTag: 'ZERO ERROR AUDIT',
+              tagColor: '#d97706',
+              description: 'Automated double-entry balance enforcement ensures total Debits equal Credits while auditing GSTR-2B vs vendor bills to claim every rupee of ITC.'
             },
             {
-              icon: <TrendingUpIcon sx={{ fontSize: 32, color: '#ec4899' }} />,
-              title: 'Financial Forecasting & Runway',
-              description: 'Predict 12-month revenue growth, monitor burn rate, and simulate cash runway scenarios based on historical general ledger data.'
+              icon: <InvoicesIcon sx={{ fontSize: 32, color: '#ec4899' }} />,
+              title: 'Get Paid 3x Faster with Instant Collection Links',
+              outcomeTag: '3X FASTER CASH',
+              tagColor: '#db2777',
+              description: 'Send customer invoices with built-in UPI, Razorpay, & credit card collection links. Auto-record customer payments and trigger ledger postings.'
             },
             {
               icon: <IntegrationsIcon sx={{ fontSize: 32, color: '#06b6d4' }} />,
-              title: 'Open Banking & Integrations',
-              description: 'Sync seamlessly with UPI, Razorpay, Stripe, PayPal, Shopify, and Zapier to centralize all company financial flows in one place.'
+              title: 'Predict Cashflow Shortfalls 45 Days in Advance',
+              outcomeTag: 'PREDICTIVE SAFETY',
+              tagColor: '#0891b2',
+              description: 'AI predictive analytics models your 12-month forward cashflow, identifying upcoming liquidity bottlenecks before they impact payroll or suppliers.'
             }
           ].map((feature, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
@@ -279,21 +291,39 @@ export default function MarketingLandingPage() {
                   bgcolor: '#1e293b', 
                   border: '1px solid #334155',
                   transition: 'transform 0.2s ease, border-color 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justify: 'space-between',
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     borderColor: '#0284c7'
                   }
                 }}
               >
-                <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: '#0f172a', display: 'inline-block' }}>
-                  {feature.icon}
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#0f172a', display: 'inline-block' }}>
+                      {feature.icon}
+                    </Box>
+                    <Chip 
+                      label={feature.outcomeTag} 
+                      size="small" 
+                      sx={{ 
+                        fontSize: 9.5, 
+                        fontWeight: 800, 
+                        bgcolor: 'rgba(15, 23, 42, 0.8)', 
+                        color: feature.tagColor,
+                        border: `1px solid ${feature.tagColor}`
+                      }} 
+                    />
+                  </Box>
+                  <Typography variant="h6" fontWeight="700" sx={{ mb: 1.5, color: '#f8fafc', lineHeight: 1.3 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6 }}>
+                    {feature.description}
+                  </Typography>
                 </Box>
-                <Typography variant="h6" fontWeight="700" sx={{ mb: 1, color: '#f8fafc' }}>
-                  {feature.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#94a3b8', lineHeight: 1.6 }}>
-                  {feature.description}
-                </Typography>
               </Paper>
             </Grid>
           ))}
