@@ -3,11 +3,11 @@ import { loginUser, registerUser, getUserById } from '../services/auth.service';
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, companyName } = req.body;
-    const user = await registerUser(email, password, companyName);
-    res.status(201).json({ message: 'User registered successfully' });
+    const { email, password, companyName, currency, subdomain } = req.body;
+    const user = await registerUser(email, password, companyName, currency, subdomain);
+    res.status(201).json({ message: 'Tenant organization & admin registered successfully', user });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 }
 
@@ -17,13 +17,17 @@ export async function login(req: Request, res: Response) {
     const { token, user } = await loginUser(email, password);
     res.json({ token, user });
   } catch (error) {
-    res.status(401).json({ error: error.message });
+    res.status(401).json({ error: (error as Error).message });
   }
 }
 
 export async function getCurrentUser(req: Request, res: Response) {
   try {
-    const user = await getUserById(req.user.userId);
+    const authenticatedUser = (req as any).user;
+    if (!authenticatedUser?.userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const user = await getUserById(authenticatedUser.userId);
     res.json(user);
   } catch (error) {
     res.status(404).json({ error: 'User not found' });

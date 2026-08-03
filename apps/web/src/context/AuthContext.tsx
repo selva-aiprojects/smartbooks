@@ -1,21 +1,40 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   user: any;
-  login: (token: string, userData: any) => void;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>(null!);
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  login: async () => false,
+  logout: () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
 
-  const login = async (email: string, password: string) => {
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (savedToken && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        setIsAuthenticated(true);
+      } catch (e) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -27,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const { token, user } = await response.json();
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       setIsAuthenticated(true);
       return true;
@@ -38,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
   };

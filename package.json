@@ -1,0 +1,45 @@
+{
+  "name": "smartbooks",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"api,web\" -c \"cyan,green\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "ts-node-dev --respawn apps/api/src/main.ts",
+    "dev:web": "next dev apps/web -p 3001",
+    "build:web": "next build apps/web",
+    "db:push": "prisma db push",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^6.0.0",
+    "@mui/material": "^6.0.0",
+    "@mui/x-charts": "^7.0.0",
+    "@mui/x-data-grid": "^7.0.0",
+    "@mui/x-date-pickers": "^7.0.0",
+    "@prisma/client": "^5.19.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "date-fns": "^3.6.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "concurrently": "^8.2.2",
+    "prisma": "^5.19.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.2"
+  }
+}

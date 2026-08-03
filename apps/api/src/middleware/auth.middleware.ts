@@ -10,8 +10,8 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwt_secret_key) as { userId: string };
-    req.user = decoded;
+    const decoded = jwt.verify(token, config.jwt_secret_key) as { userId: string; companyId: string };
+    (req as any).user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });

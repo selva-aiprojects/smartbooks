@@ -1,21 +1,62 @@
-import { Box, Button, Typography } from '@mui/material';
+'use client';
+
+import { Box, Button, Typography, CircularProgress } from '@mui/material';
 import Link from 'next/link';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { useState, useEffect } from 'react';
 
 const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', width: 100 },
-  { field: 'date', headerName: 'Date', width: 120 },
+  { field: 'id', headerName: 'ID', width: 180 },
+  { field: 'date', headerName: 'Date', width: 130 },
   { field: 'description', headerName: 'Description', flex: 1 },
   { field: 'status', headerName: 'Status', width: 120 },
-  { field: 'total', headerName: 'Total', width: 120, valueFormatter: (params) => `$${params.value}` },
+  { 
+    field: 'total', 
+    headerName: 'Total ($)', 
+    width: 130, 
+    valueFormatter: (value) => `$${value ?? 0}` 
+  },
 ];
 
-const rows = [
-  { id: 1, date: '2026-08-01', description: 'Sample Entry 1', status: 'Posted', total: 1000 },
-  { id: 2, date: '2026-08-02', description: 'Sample Entry 2', status: 'Draft', total: 2000 },
+const fallbackRows = [
+  { id: '1', date: '2026-08-01', description: 'Initial Capital Investment', status: 'Posted', total: 10000 },
+  { id: '2', date: '2026-08-02', description: 'Office Equipment Purchase', status: 'Draft', total: 2500 },
 ];
 
 export default function JournalPage() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchJournalEntries() {
+      try {
+        const res = await fetch('/api/journal');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setRows(data.map((item: any) => ({
+              id: item.id,
+              date: new Date(item.date).toISOString().split('T')[0],
+              description: item.description || 'N/A',
+              status: item.status || 'Posted',
+              total: item.lines ? item.lines.reduce((acc: number, l: any) => acc + (Number(l.amount) || 0), 0) : 0
+            })));
+          } else {
+            setRows(fallbackRows);
+          }
+        } else {
+          setRows(fallbackRows);
+        }
+      } catch (err) {
+        console.error('Error fetching journal entries:', err);
+        setRows(fallbackRows);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchJournalEntries();
+  }, []);
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -29,14 +70,20 @@ export default function JournalPage() {
         </Button>
       </Box>
       
-      <Box sx={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[5, 10]}
-          checkboxSelection
-          disableRowSelectionOnClick
-        />
+      <Box sx={{ height: 450, width: '100%' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSizeOptions={[5, 10, 25]}
+            checkboxSelection
+            disableRowSelectionOnClick
+          />
+        )}
       </Box>
     </Box>
   );

@@ -6,16 +6,39 @@ import { config } from '../core/config';
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 12;
 
-export async function registerUser(email: string, password: string, companyName: string) {
+export async function registerUser(email: string, password: string, companyName: string, currency: string = 'INR', subdomain?: string) {
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+  const companySubdomain = subdomain || (email.split('@')[0] + '-' + Date.now());
   
   return await prisma.$transaction(async (tx) => {
     const company = await tx.company.create({
       data: {
         name: companyName,
-        subdomain: email.split('@')[0]
+        subdomain: companySubdomain,
+        currency: currency || 'INR'
       }
     });
+
+    const defaultAccounts = [
+      { name: 'Cash on Hand', code: '1010', type: 'Asset' },
+      { name: 'Accounts Receivable', code: '1020', type: 'Asset' },
+      { name: 'Accounts Payable', code: '2010', type: 'Liability' },
+      { name: 'Owner Equity', code: '3010', type: 'Equity' },
+      { name: 'Sales Revenue', code: '4010', type: 'Revenue' },
+      { name: 'General Expense', code: '5010', type: 'Expense' }
+    ];
+
+    for (const acc of defaultAccounts) {
+      await tx.account.create({
+        data: {
+          companyId: company.id,
+          name: acc.name,
+          code: acc.code,
+          type: acc.type,
+          balance: 0
+        }
+      });
+    }
 
     return await tx.user.create({
       data: {
@@ -50,7 +73,15 @@ export async function getUserById(id: string) {
       id: true,
       email: true,
       companyId: true,
-      company: true
+      company: {
+        select: {
+          id: true,
+          name: true,
+          subdomain: true,
+          currency: true,
+          accounts: true
+        }
+      }
     }
   });
 }

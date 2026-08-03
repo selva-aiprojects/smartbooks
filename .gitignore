@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment files
+.env
+.env*.local
+
+# Database
+prisma/*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tooling caches
+.aider*
+*.tsbuildinfo

@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 import GeneralSettings from './components/GeneralSettings';

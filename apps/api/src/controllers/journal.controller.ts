@@ -10,7 +10,7 @@ export async function createEntry(req: Request, res: Response) {
     const entry = await createJournalEntry(req.body);
     res.status(201).json(entry);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: (error as Error).message });
   }
 }
 
@@ -19,7 +19,7 @@ export async function getEntries(req: Request, res: Response) {
     const entries = await getJournalEntries(req.params.companyId);
     res.json(entries);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 }
 
@@ -31,6 +31,6 @@ export async function getEntry(req: Request, res: Response) {
     }
     res.json(entry);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 }

@@ -2,126 +2,147 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Button, TextField, Typography, Grid, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { Box, Button, TextField, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 
 export default function JournalEntryForm() {
-  const [entryDate, setEntryDate] = useState(new Date());
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
-  const [lines, setLines] = useState([{ account: '', debit: 0, credit: 0 }]);
+  const [lines, setLines] = useState([{ account: 'cash', debit: 0, credit: 0 }]);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const handleAddLine = () => {
-    setLines([...lines, { account: '', debit: 0, credit: 0 }]);
+    setLines([...lines, { account: 'cash', debit: 0, credit: 0 }]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement API call
-    router.push('/journal');
+    setSubmitting(true);
+    try {
+      await fetch('/api/journal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: entryDate,
+          description,
+          lines: lines.map((l) => ({
+            accountId: l.account,
+            amount: l.debit > 0 ? l.debit : l.credit,
+            type: l.debit > 0 ? 'debit' : 'credit',
+          })),
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to submit entry:', err);
+    } finally {
+      setSubmitting(false);
+      router.push('/journal');
+    }
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          New Journal Entry
-        </Typography>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        New Journal Entry
+      </Typography>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <DatePicker
-              label="Entry Date"
-              value={entryDate}
-              onChange={(newValue) => setEntryDate(newValue!)}
-              slotProps={{ textField: { fullWidth: true, required: true } }}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+        <TextField
+          fullWidth
+          type="date"
+          label="Entry Date"
+          value={entryDate}
+          onChange={(e) => setEntryDate(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          required
+        />
+        
+        <Box sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
+          <TextField
+            fullWidth
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </Box>
+
+        {lines.map((line, index) => (
+          <Box 
+            key={index} 
+            sx={{ 
+              gridColumn: { xs: 'span 1', md: 'span 2' },
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr' },
+              gap: 2,
+              p: 2,
+              border: '1px solid #e0e0e0',
+              borderRadius: 1
+            }}
+          >
+            <FormControl fullWidth>
+              <InputLabel>Account</InputLabel>
+              <Select
+                value={line.account}
+                label="Account"
+                onChange={(e) => {
+                  const newLines = [...lines];
+                  newLines[index].account = e.target.value;
+                  setLines(newLines);
+                }}
+                required
+              >
+                <MenuItem value="cash">Cash on Hand</MenuItem>
+                <MenuItem value="receivables">Accounts Receivable</MenuItem>
+                <MenuItem value="payables">Accounts Payable</MenuItem>
+                <MenuItem value="revenue">Sales Revenue</MenuItem>
+                <MenuItem value="expense">General Expense</MenuItem>
+              </Select>
+            </FormControl>
+
             <TextField
               fullWidth
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
+              label="Debit ($)"
+              type="number"
+              value={line.debit}
+              onChange={(e) => {
+                const newLines = [...lines];
+                newLines[index].debit = parseFloat(e.target.value) || 0;
+                setLines(newLines);
+              }}
             />
-          </Grid>
 
-          {lines.map((line, index) => (
-            <Grid container item spacing={3} key={index}>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Account</InputLabel>
-                  <Select
-                    value={line.account}
-                    label="Account"
-                    onChange={(e) => {
-                      const newLines = [...lines];
-                      newLines[index].account = e.target.value;
-                      setLines(newLines);
-                    }}
-                    required
-                  >
-                    {/* TODO: Populate with accounts */}
-                    <MenuItem value="cash">Cash</MenuItem>
-                    <MenuItem value="receivables">Accounts Receivable</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Debit"
-                  type="number"
-                  value={line.debit}
-                  onChange={(e) => {
-                    const newLines = [...lines];
-                    newLines[index].debit = parseFloat(e.target.value);
-                    setLines(newLines);
-                  }}
-                />
-              </Grid>
-              
-              <Grid item xs={6} md={4}>
-                <TextField
-                  fullWidth
-                  label="Credit"
-                  type="number"
-                  value={line.credit}
-                  onChange={(e) => {
-                    const newLines = [...lines];
-                    newLines[index].credit = parseFloat(e.target.value);
-                    setLines(newLines);
-                  }}
-                />
-              </Grid>
-            </Grid>
-          ))}
+            <TextField
+              fullWidth
+              label="Credit ($)"
+              type="number"
+              value={line.credit}
+              onChange={(e) => {
+                const newLines = [...lines];
+                newLines[index].credit = parseFloat(e.target.value) || 0;
+                setLines(newLines);
+              }}
+            />
+          </Box>
+        ))}
 
-          <Grid item xs={12}>
-            <Button 
-              variant="outlined" 
-              onClick={handleAddLine}
-            >
-              Add Line
-            </Button>
-          </Grid>
+        <Box sx={{ gridColumn: { xs: 'span 1', md: 'span 2' }, display: 'flex', gap: 2, mt: 1 }}>
+          <Button 
+            variant="outlined" 
+            onClick={handleAddLine}
+          >
+            Add Line
+          </Button>
 
-          <Grid item xs={12}>
-            <Button 
-              type="submit"
-              variant="contained"
-              size="large"
-            >
-              Create Entry
-            </Button>
-          </Grid>
-        </Grid>
+          <Button 
+            type="submit"
+            variant="contained"
+            disabled={submitting}
+          >
+            {submitting ? 'Creating...' : 'Create Entry'}
+          </Button>
+        </Box>
       </Box>
-    </LocalizationProvider>
+    </Box>
   );
 }

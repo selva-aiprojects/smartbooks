@@ -17,9 +17,9 @@ export async function createJournalEntry(entryData: JournalEntryCreateInput) {
   });
 }
 
-export async function getJournalEntries(companyId: string) {
+export async function getJournalEntries(companyId?: string) {
   return await prisma.journalEntry.findMany({
-    where: { companyId },
+    where: companyId ? { companyId } : undefined,
     include: { lines: true },
     orderBy: { date: 'desc' }
   });
