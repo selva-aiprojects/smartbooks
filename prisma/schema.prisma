@@ -4,7 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:postgres@localhost:5432/smartbooks?schema=public"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma" // For better relation handling
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // For migrations
 }
 
 enum JournalEntryStatus {
