@@ -6,13 +6,16 @@ import {
   addInvoice, 
   markInvoiceStatus 
 } from '../controllers/invoice.controller';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/customers/:companyId?', fetchCustomers);
+router.use(authenticate);
+
+router.get('/customers', fetchCustomers);
 router.post('/customers', addCustomer);
 
-router.get('/:companyId?', fetchInvoices);
+router.get('/', fetchInvoices);
 router.post('/', addInvoice);
 router.patch('/:id/status', markInvoiceStatus);
 

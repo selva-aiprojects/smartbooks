@@ -4,10 +4,13 @@ import {
   uploadBankTransactions, 
   matchTransactions 
 } from '../controllers/reconciliation.controller';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/:companyId?', fetchBankTransactions);
+router.use(authenticate);
+
+router.get('/', fetchBankTransactions);
 router.post('/import', uploadBankTransactions);
 router.post('/auto-match', matchTransactions);
 

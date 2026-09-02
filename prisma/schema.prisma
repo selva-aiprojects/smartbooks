@@ -38,6 +38,8 @@ model User {
   updatedAt      DateTime       @updatedAt
   roles          Role[]
   journalEntries JournalEntry[]
+
+  @@index([companyId])
 }
 
 model Role {
@@ -57,7 +59,11 @@ model Account {
   code      String
   type      String
   balance   Decimal       @default(0)
+  active    Boolean       @default(true)
   entries   JournalLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
 }
 
 model JournalEntry {
@@ -70,17 +76,22 @@ model JournalEntry {
   createdById String
   createdBy   User          @relation(fields: [createdById], references: [id])
   lines       JournalLine[]
+
+  @@index([companyId])
+  @@index([companyId, date])
 }
 
 model JournalLine {
   id          String       @id @default(uuid())
   entryId     String
-  entry       JournalEntry @relation(fields: [entryId], references: [id])
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   accountId   String
   account     Account      @relation(fields: [accountId], references: [id])
   amount      Decimal
   type        String
   description String?
+
+  @@index([accountId])
 }
 
 model Customer {
@@ -94,6 +105,8 @@ model Customer {
   invoices  Invoice[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([companyId])
 }
 
 model Invoice {
@@ -106,10 +119,13 @@ model Invoice {
   issueDate   DateTime
   dueDate     DateTime
   status      String        @default("Draft")
-  totalAmount Float         @default(0)
+  totalAmount Decimal       @default(0) @db.Decimal(19,2)
   items       InvoiceItem[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, status])
 }
 
 model InvoiceItem {
@@ -118,8 +134,8 @@ model InvoiceItem {
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   description String
   quantity    Int      @default(1)
-  unitPrice   Float    @default(0)
-  amount      Float    @default(0)
+  unitPrice   Decimal  @default(0) @db.Decimal(19,2)
+  amount      Decimal  @default(0) @db.Decimal(19,2)
 }
 
 model Vendor {
@@ -133,6 +149,8 @@ model Vendor {
   bills     Bill[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([companyId])
 }
 
 model Bill {
@@ -145,21 +163,24 @@ model Bill {
   billDate    DateTime
   dueDate     DateTime
   status      String     @default("Unpaid")
-  totalAmount Float      @default(0)
+  totalAmount Decimal    @default(0) @db.Decimal(19,2)
   items       BillItem[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, status])
 }
 
 model BillItem {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   billId      String
-  bill        Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
   description String
-  quantity    Int    @default(1)
-  unitPrice   Float  @default(0)
-  amount      Float  @default(0)
-  category    String @default("Expense")
+  quantity    Int     @default(1)
+  unitPrice   Decimal @default(0) @db.Decimal(19,2)
+  amount      Decimal @default(0) @db.Decimal(19,2)
+  category    String  @default("Expense")
 }
 
 model BankTransaction {
@@ -168,9 +189,13 @@ model BankTransaction {
   company        Company  @relation(fields: [companyId], references: [id])
   date           DateTime
   description    String
-  amount         Float
+  amount         Decimal  @db.Decimal(19,2)
   type           String
   matched        Boolean  @default(false)
   matchedEntryId String?
+  externalId     String?
   createdAt      DateTime @default(now())
+
+  @@unique([companyId, externalId])
+  @@index([companyId])
 }

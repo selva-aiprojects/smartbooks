@@ -6,50 +6,68 @@ import {
   createInvoice, 
   updateInvoiceStatus 
 } from '../services/invoice.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
-export async function fetchCustomers(req: Request, res: Response) {
+export async function fetchCustomers(req: AuthRequest, res: Response) {
   try {
-    const companyId = req.params.companyId || (req as any).user?.companyId;
-    const customers = await getCustomers(companyId);
+    const customers = await getCustomers(req.user.companyId);
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 }
 
-export async function addCustomer(req: Request, res: Response) {
+export async function addCustomer(req: AuthRequest, res: Response) {
   try {
-    const customer = await createCustomer(req.body);
+    const { name, email, phone, address } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Customer name is required' });
+    }
+    const customer = await createCustomer({
+      companyId: req.user.companyId,
+      name,
+      email,
+      phone,
+      address
+    });
     res.status(201).json(customer);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }
 }
 
-export async function fetchInvoices(req: Request, res: Response) {
+export async function fetchInvoices(req: AuthRequest, res: Response) {
   try {
-    const companyId = req.params.companyId || (req as any).user?.companyId;
-    const invoices = await getInvoices(companyId);
+    const invoices = await getInvoices(req.user.companyId);
     res.json(invoices);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 }
 
-export async function addInvoice(req: Request, res: Response) {
+export async function addInvoice(req: AuthRequest, res: Response) {
   try {
-    const invoice = await createInvoice(req.body);
+    const { customerId, number, issueDate, dueDate, items } = req.body;
+    const invoice = await createInvoice({
+      companyId: req.user.companyId,
+      createdById: req.user.userId,
+      customerId,
+      number,
+      issueDate,
+      dueDate,
+      items
+    });
     res.status(201).json(invoice);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }
 }
 
-export async function markInvoiceStatus(req: Request, res: Response) {
+export async function markInvoiceStatus(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const invoice = await updateInvoiceStatus(id, status);
+    const invoice = await updateInvoiceStatus(id, status, req.user.companyId, req.user.userId);
     res.json(invoice);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });

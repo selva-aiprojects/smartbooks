@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../core/config';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
 const SALT_ROUNDS = 12;
 
 export async function registerUser(

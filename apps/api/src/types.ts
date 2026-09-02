@@ -7,7 +7,7 @@ export interface JournalLineCreateInput {
 
 export interface JournalEntryCreateInput {
   companyId: string;
-  date: Date | string;
+  date?: Date | string;
   description?: string;
   status?: 'Posted' | 'Draft' | 'Void';
   createdById: string;
