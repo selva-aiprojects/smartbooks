@@ -28,7 +28,7 @@ export async function createBill(data: {
   dueDate: Date | string;
   items: Array<{ description: string; quantity: number; unitPrice: number; category?: string }>;
 }) {
-  const { companyId, vendorId, items, ...rest } = data;
+  const { companyId, createdById, vendorId, items, ...rest } = data;
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('A bill must have at least one line item');

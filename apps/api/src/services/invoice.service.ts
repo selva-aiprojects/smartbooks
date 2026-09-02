@@ -28,7 +28,7 @@ export async function createInvoice(data: {
   dueDate: Date | string;
   items: Array<{ description: string; quantity: number; unitPrice: number }>;
 }) {
-  const { companyId, customerId, items, ...rest } = data;
+  const { companyId, createdById, customerId, items, ...rest } = data;
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('An invoice must have at least one line item');
