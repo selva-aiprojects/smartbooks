@@ -3,6 +3,7 @@
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, CircularProgress, Alert, Snackbar } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../lib/api';
 
 const ACCOUNT_TYPES = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
 
@@ -38,7 +39,7 @@ export default function AccountsPage() {
   useEffect(() => {
     async function fetchAccounts() {
       try {
-        const res = await fetch('/api/accounts');
+        const res = await fetch('/api/accounts', { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -71,7 +72,7 @@ export default function AccountsPage() {
     try {
       const res = await fetch('/api/accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ ...form, balance: 0 }),
       });
       if (res.ok) {

@@ -16,6 +16,7 @@ import {
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Add as AddIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import Link from 'next/link';
+import { getAuthHeaders } from '../../lib/api';
 
 const columns: GridColDef[] = [
   { field: 'number', headerName: 'Invoice #', width: 140 },
@@ -51,18 +52,45 @@ const mockInvoices = [
 
 export default function InvoicesPage() {
   const [rows, setRows] = useState<any[]>(mockInvoices);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
+
+  useEffect(() => {
+    async function fetchInvoices() {
+      try {
+        const res = await fetch('/api/invoices', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setRows(data.map((item: any) => ({
+              id: item.id,
+              number: item.number,
+              customerName: item.customer?.name || 'N/A',
+              issueDate: item.issueDate ? new Date(item.issueDate).toISOString().split('T')[0] : '',
+              dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
+              status: item.status,
+              totalAmount: item.totalAmount,
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching invoices:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInvoices();
+  }, []);
 
   const handleAddCustomer = async () => {
     if (!newCustomerName) return;
     try {
       await fetch('/api/invoices/customers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCustomerName, email: newCustomerEmail, companyId: 'demo' })
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ name: newCustomerName, email: newCustomerEmail })
       });
     } catch (e) {
       console.error(e);
@@ -106,6 +134,11 @@ export default function InvoicesPage() {
       </Box>
 
       <Box sx={{ height: 480, width: '100%', backgroundColor: '#fff', borderRadius: 2, p: 1 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
         <DataGrid
           rows={rows}
           columns={columns}
@@ -113,6 +146,7 @@ export default function InvoicesPage() {
           checkboxSelection
           disableRowSelectionOnClick
         />
+        )}
       </Box>
 
       {/* Add Customer Modal */}

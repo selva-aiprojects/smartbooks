@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Box, Typography, Paper, Button, Chip, Alert, LinearProgress, Card, CardContent, Divider, TextField, MenuItem, FormControl, InputLabel, Select, Snackbar } from '@mui/material';
 import { Scanner as OCRIcon, CloudUpload as UploadIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import { useTenant } from '../../context/TenantContext';
+import { getAuthHeaders } from '../../lib/api';
 
 interface ParsedLine {
   description: string;
@@ -136,7 +137,7 @@ export default function OCRScannerPage() {
     try {
       const res = await fetch('/api/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           vendorName: ocrResult.vendor,
           number: ocrResult.receiptNumber,

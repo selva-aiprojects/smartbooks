@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAuthHeaders } from '../../../lib/api';
 import { 
   Box, 
   Typography, 
@@ -47,7 +48,7 @@ export default function NewInvoicePage() {
     try {
       await fetch('/api/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           customerId: '1',
           number: invoiceNumber,

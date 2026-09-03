@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getAuthHeaders } from '../../lib/api';
 import { 
   Box, 
   Typography, 
@@ -60,7 +61,7 @@ export default function AIAssistantPage() {
     try {
       const res = await fetch('/api/ai/query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ query: userMsg.text })
       });
       const data = await res.json();
@@ -91,7 +92,7 @@ export default function AIAssistantPage() {
     try {
       const res = await fetch('/api/ai/categorize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ description: categorizeDesc, amount: parseFloat(categorizeAmount) || 0 })
       });
       const data = await res.json();

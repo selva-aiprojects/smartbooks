@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
   Button, 
   Chip, 
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Add as AddIcon, Storefront as StorefrontIcon } from '@mui/icons-material';
 import Link from 'next/link';
+import { getAuthHeaders } from '../../lib/api';
 
 const columns: GridColDef[] = [
   { field: 'number', headerName: 'Bill #', width: 140 },
@@ -49,17 +51,45 @@ const mockBills = [
 
 export default function BillsPage() {
   const [rows, setRows] = useState<any[]>(mockBills);
+  const [loading, setLoading] = useState(true);
   const [openVendorModal, setOpenVendorModal] = useState(false);
   const [newVendorName, setNewVendorName] = useState('');
   const [newVendorEmail, setNewVendorEmail] = useState('');
+
+  useEffect(() => {
+    async function fetchBills() {
+      try {
+        const res = await fetch('/api/bills', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setRows(data.map((item: any) => ({
+              id: item.id,
+              number: item.number,
+              vendorName: item.vendor?.name || 'N/A',
+              billDate: item.billDate ? new Date(item.billDate).toISOString().split('T')[0] : '',
+              dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
+              status: item.status,
+              totalAmount: item.totalAmount,
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching bills:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBills();
+  }, []);
 
   const handleAddVendor = async () => {
     if (!newVendorName) return;
     try {
       await fetch('/api/bills/vendors', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newVendorName, email: newVendorEmail, companyId: 'demo' })
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ name: newVendorName, email: newVendorEmail })
       });
     } catch (e) {
       console.error(e);
@@ -104,6 +134,11 @@ export default function BillsPage() {
       </Box>
 
       <Box sx={{ height: 480, width: '100%', backgroundColor: '#fff', borderRadius: 2, p: 1 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
         <DataGrid
           rows={rows}
           columns={columns}
@@ -111,6 +146,7 @@ export default function BillsPage() {
           checkboxSelection
           disableRowSelectionOnClick
         />
+        )}
       </Box>
 
       {/* Add Vendor Modal */}

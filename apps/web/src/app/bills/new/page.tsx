@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAuthHeaders } from '../../../lib/api';
 import { 
   Box, 
   Typography, 
@@ -46,7 +47,7 @@ export default function NewBillPage() {
     try {
       await fetch('/api/bills', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           vendorId: '1',
           number: billNumber,

@@ -4,6 +4,7 @@ import { Box, Button, Typography, CircularProgress } from '@mui/material';
 import Link from 'next/link';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../lib/api';
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 180 },
@@ -30,7 +31,7 @@ export default function JournalPage() {
   useEffect(() => {
     async function fetchJournalEntries() {
       try {
-        const res = await fetch('/api/journal');
+        const res = await fetch('/api/journal', { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {

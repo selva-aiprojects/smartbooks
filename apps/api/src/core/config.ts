@@ -5,7 +5,7 @@ function resolveJwtSecret(): string {
     }
     return process.env.JWT_SECRET;
   }
-  return process.env.JWT_SECRET || 'smartbooks-secret-key-2026';
+  return process.env.JWT_SECRET || 'smartbooks_enterprise_secret_key_2026';
 }
 
 export const config = {

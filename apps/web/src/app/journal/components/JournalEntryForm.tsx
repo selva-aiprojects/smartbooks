@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Button, TextField, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { getAuthHeaders } from '../../../lib/api';
 
 export default function JournalEntryForm() {
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
@@ -21,7 +22,7 @@ export default function JournalEntryForm() {
     try {
       await fetch('/api/journal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           date: entryDate,
           description,
