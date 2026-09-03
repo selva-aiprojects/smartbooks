@@ -38,7 +38,8 @@ import {
   Warning as WarningIcon,
   ArrowForward as ArrowForwardIcon,
   Lightbulb as LightbulbIcon,
-  MoreVert as MoreVertIcon
+  MoreVert as MoreVertIcon,
+  HomeWork as GatewayIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
@@ -122,6 +123,17 @@ export default function DashboardPage() {
             variant="outlined"
             sx={{ fontWeight: 600, cursor: 'pointer', borderRadius: 2 }}
           />
+
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<GatewayIcon />}
+            component={Link}
+            href="/gateway"
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+          >
+            Gateway of Tally
+          </Button>
 
           <Button
             variant="contained"

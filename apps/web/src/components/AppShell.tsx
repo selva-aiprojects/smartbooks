@@ -56,7 +56,11 @@ import {
   AdminPanelSettings as NexusAdminIcon,
   ConfirmationNumber as TicketIcon,
   Dns as DnsIcon,
-  BusinessCenter as BusinessCenterIcon
+  BusinessCenter as BusinessCenterIcon,
+  HomeWork as GatewayIcon,
+  MenuBook as DayBookIcon,
+  AccountBalanceWallet as LedgerIcon,
+  SwapHoriz as VoucherIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -65,24 +69,40 @@ import { useTenant } from '../context/TenantContext';
 
 const DRAWER_WIDTH = 270;
 
-const starterItems = [
+const gatewayItems = [
+  { label: 'Gateway of Tally', path: '/gateway', icon: <GatewayIcon /> },
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-  { label: 'Chart of Accounts', path: '/accounts', icon: <AccountsIcon /> },
+];
+
+const voucherItems = [
+  { label: 'Accounting Vouchers', path: '/vouchers', icon: <VoucherIcon /> },
+];
+
+const booksItems = [
+  { label: 'Day Book', path: '/day-book', icon: <DayBookIcon /> },
+  { label: 'Ledgers', path: '/ledger', icon: <LedgerIcon /> },
   { label: 'Journals', path: '/journal', icon: <JournalIcon /> },
+  { label: 'Chart of Accounts', path: '/accounts', icon: <AccountsIcon /> },
+];
+
+const registerItems = [
   { label: 'Customer Invoices', path: '/invoices', icon: <InvoicesIcon /> },
   { label: 'Vendor Bills', path: '/bills', icon: <BillsIcon /> },
-  { label: 'Financial Reports', path: '/reports', icon: <ReportsIcon /> },
-  { label: 'AI Assistant', path: '/ai-assistant', icon: <AIIcon /> },
+  { label: 'Cash / Bank & Payments', path: '/payments', icon: <PaymentsIcon /> },
 ];
 
-const growthItems = [
-  { label: 'Inventory', path: '/inventory', icon: <InventoryIcon /> },
-  { label: 'GST/VAT Tax Engine', path: '/tax', icon: <TaxIcon /> },
+const statutoryItems = [
+  { label: 'GST & Statutory', path: '/tax', icon: <TaxIcon /> },
   { label: 'Bank Reconciliation', path: '/reconciliation', icon: <ReconciliationIcon /> },
-  { label: 'Online Payments', path: '/payments', icon: <PaymentsIcon /> },
 ];
 
-const enterpriseItems = [
+const reportItems = [
+  { label: 'Financial Reports', path: '/reports', icon: <ReportsIcon /> },
+];
+
+const advancedItems = [
+  { label: 'Stock / Inventory', path: '/inventory', icon: <InventoryIcon /> },
+  { label: 'AI Assistant', path: '/ai-assistant', icon: <AIIcon /> },
   { label: 'OCR Receipt Scanner', path: '/ocr-scanner', icon: <OCRIcon /> },
   { label: 'Financial Forecasting', path: '/forecasting', icon: <ForecastIcon /> },
   { label: 'Workflow Automations', path: '/automations', icon: <AutomationIcon /> },
@@ -197,11 +217,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // All modules are enabled for full-product access across every tenant/plan.
-  const showGrowth = true;
-  const showEnterprise = true;
-
-  const renderNavSection = (items: typeof starterItems, headerTitle: string, tierColor: string, badgeLabel: string, isLocked: boolean = false) => (
+  const renderNavSection = (items: typeof gatewayItems, headerTitle: string, tierColor: string, badgeLabel: string, isLocked: boolean = false) => (
     <Box sx={{ mb: 1.5, opacity: isLocked ? 0.6 : 1 }}>
       <ListSubheader 
         disableSticky
@@ -264,7 +280,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0f172a', color: '#f8fafc' }}>
       {/* App Logo Header */}
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
-        <Box component={Link} href={isSuperAdmin ? '/nexus-admin' : '/dashboard'} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
+        <Box component={Link} href={isSuperAdmin ? '/nexus-admin' : '/gateway'} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none' }}>
           <Box
             component="img"
             src="/logo-icon-badge.png"
@@ -298,13 +314,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {renderNavSection(nexusAdminOpsItems, 'OPERATIONS', '#64748b', 'Admin')}
           </>
         ) : (
-          // Tenant User view – operational accounting screens
+          // Tenant User view – operational accounting screens (Tally-style groups)
           <>
-            {renderNavSection(starterItems, 'STARTER / ESSENTIALS', '#10b981', 'Starter')}
+            {renderNavSection(gatewayItems, 'GATEWAY', '#10b981', 'Home')}
             <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
-            {renderNavSection(growthItems, 'GROWTH / PROFESSIONAL', '#0284c7', 'Growth', !showGrowth)}
+            {renderNavSection(voucherItems, 'ACCOUNTING VOUCHERS', '#0284c7', 'F7-F10')}
             <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
-            {renderNavSection(enterpriseItems, 'ENTERPRISE / PREMIUM', '#8b5cf6', 'Enterprise', !showEnterprise)}
+            {renderNavSection(booksItems, 'ACCOUNTING BOOKS', '#0d9488', 'Books')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(registerItems, 'REGISTERS', '#7c3aed', 'Registers')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(statutoryItems, 'STATUTORY & MIS', '#dc2626', 'GST/TDS')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(reportItems, 'REPORTS', '#4f46e5', 'Reports')}
+            <Divider sx={{ my: 1, borderColor: '#1e293b' }} />
+            {renderNavSection(advancedItems, 'AI & PREMIUM TOOLS', '#8b5cf6', 'Premium', false)}
           </>
         )}
       </Box>
@@ -364,7 +388,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 minWidth: 0 
               }}
             >
-              {[...starterItems, ...growthItems, ...enterpriseItems].find((n) => n.path === pathname)?.label || 'SmartBooks Workspace'}
+              {[...gatewayItems, ...voucherItems, ...booksItems, ...registerItems, ...statutoryItems, ...reportItems, ...advancedItems].find((n) => n.path === pathname)?.label || 'SmartBooks Workspace'}
             </Typography>
           </Box>
 

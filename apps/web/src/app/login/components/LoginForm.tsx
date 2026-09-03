@@ -67,11 +67,11 @@ export default function LoginForm() {
 
     const success = await login(email, password);
     if (success) {
-      // Nexus Admin → Platform Control Center; Tenant Users → Workspace Dashboard
+      // Nexus Admin → Platform Control Center; Tenant Users → Gateway of Tally
       if (isNexusAdmin(email)) {
         router.push('/nexus-admin');
       } else {
-        router.push('/dashboard');
+        router.push('/gateway');
       }
     } else {
       setError('Invalid credentials. Try admin@smartbooks.com (Nexus Admin) or owner@nexusretail.com (Tenant).');
