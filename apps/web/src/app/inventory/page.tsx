@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Button, Paper, Chip } from '@mui/material';
+import { Box, Typography, Button, Paper, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Add as AddIcon, Inventory as InventoryIcon } from '@mui/icons-material';
 
@@ -41,8 +41,38 @@ const mockInventory = [
   { id: '3', sku: 'SKU-1003', name: 'UltraHD 27" IPS Monitor', category: 'Hardware', stock: 0, unitPrice: 350, totalValue: 0 },
 ];
 
+const categories = ['Hardware', 'Accessories', 'Consumables', 'Software & Licensing', 'Furniture', 'Raw Material'];
+
 export default function InventoryPage() {
-  const [rows] = useState(mockInventory);
+  const [rows, setRows] = useState<any[]>(mockInventory);
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [name, setName] = useState('');
+  const [sku, setSku] = useState('');
+  const [category, setCategory] = useState('');
+  const [stock, setStock] = useState(0);
+  const [unitPrice, setUnitPrice] = useState(0);
+
+  const handleAddProduct = () => {
+    if (!name || !sku || !category) return;
+    const id = `item-${Date.now()}`;
+    const newItem = {
+      id,
+      sku: sku.trim().toUpperCase(),
+      name: name.trim(),
+      category,
+      stock: Number(stock) || 0,
+      unitPrice: Number(unitPrice) || 0,
+      totalValue: (Number(stock) || 0) * (Number(unitPrice) || 0),
+    };
+    setRows([...rows, newItem]);
+    setOpenAddModal(false);
+    setName('');
+    setSku('');
+    setCategory('');
+    setStock(0);
+    setUnitPrice(0);
+    alert('Product added successfully!');
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -58,7 +88,7 @@ export default function InventoryPage() {
           </Typography>
         </Box>
 
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenAddModal(true)}>
           Add Product / Item
         </Button>
       </Box>
@@ -72,6 +102,65 @@ export default function InventoryPage() {
           disableRowSelectionOnClick
         />
       </Box>
+
+      {/* Add Product/Item Modal */}
+      <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Product / Item</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField 
+            label="Item Name" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            fullWidth 
+            required 
+          />
+          <TextField 
+            label="SKU Code" 
+            value={sku} 
+            onChange={(e) => setSku(e.target.value)} 
+            fullWidth 
+            required 
+            placeholder="e.g. SKU-2001"
+          />
+          <FormControl fullWidth required>
+            <InputLabel id="inventory-category-label">Category</InputLabel>
+            <Select
+              labelId="inventory-category-label"
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {categories.map((c) => (
+                <MenuItem key={c} value={c}>{c}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField 
+              label="Stock Quantity" 
+              type="number" 
+              value={stock} 
+              onChange={(e) => setStock(Number(e.target.value))} 
+              fullWidth 
+              required 
+            />
+            <TextField 
+              label="Unit Price (₹)" 
+              type="number" 
+              value={unitPrice} 
+              onChange={(e) => setUnitPrice(Number(e.target.value))} 
+              fullWidth 
+              required 
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAddProduct} disabled={!name || !sku || !category}>
+            Add Product
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

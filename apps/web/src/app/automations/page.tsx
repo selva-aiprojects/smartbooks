@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Paper, Switch, Chip, Button, List, ListItem, ListItemText, ListItemSecondaryAction, Divider } from '@mui/material';
+import { Box, Typography, Paper, Switch, Chip, Button, List, ListItem, ListItemText, ListItemSecondaryAction, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { AutoMode as AutomationIcon, Add as AddIcon } from '@mui/icons-material';
 
 const mockAutomations = [
@@ -11,11 +11,41 @@ const mockAutomations = [
   { id: '4', name: 'Low Cash Warning Alert', trigger: 'Cash Balance < ₹10,000', action: 'Send SMS & Push Alert to Admin', enabled: true },
 ];
 
+const triggerOptions = [
+  'Invoice Overdue by 7 Days',
+  '1st Day of Every Month',
+  'Bank Match Confidence > 95%',
+  'Cash Balance Below Threshold',
+  'New Vendor Bill Recorded',
+  'Low Stock Level Reached',
+];
+
 export default function AutomationsPage() {
   const [rules, setRules] = useState(mockAutomations);
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [name, setName] = useState('');
+  const [trigger, setTrigger] = useState('');
+  const [action, setAction] = useState('');
 
   const handleToggle = (id: string) => {
     setRules(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  };
+
+  const handleCreateRule = () => {
+    if (!name || !trigger || !action) return;
+    const newRule = {
+      id: `auto-${Date.now()}`,
+      name: name.trim(),
+      trigger,
+      action: action.trim(),
+      enabled: true,
+    };
+    setRules([...rules, newRule]);
+    setOpenAddModal(false);
+    setName('');
+    setTrigger('');
+    setAction('');
+    alert('Automation rule created successfully!');
   };
 
   return (
@@ -32,7 +62,7 @@ export default function AutomationsPage() {
           </Typography>
         </Box>
 
-        <Button variant="contained" color="secondary" startIcon={<AddIcon />}>
+        <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setOpenAddModal(true)}>
           Create Automation Rule
         </Button>
       </Box>
@@ -64,6 +94,48 @@ export default function AutomationsPage() {
           ))}
         </List>
       </Paper>
+
+      {/* Create Automation Rule Modal */}
+      <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Automation Rule</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField 
+            label="Rule Name" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            fullWidth 
+            required 
+            placeholder="e.g. Auto-Send Payment Reminders"
+          />
+          <FormControl fullWidth required>
+            <InputLabel id="automation-trigger-label">Trigger</InputLabel>
+            <Select
+              labelId="automation-trigger-label"
+              label="Trigger"
+              value={trigger}
+              onChange={(e) => setTrigger(e.target.value)}
+            >
+              {triggerOptions.map((t) => (
+                <MenuItem key={t} value={t}>{t}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField 
+            label="Action" 
+            value={action} 
+            onChange={(e) => setAction(e.target.value)} 
+            fullWidth 
+            required 
+            placeholder="e.g. Send Email Reminder to Client"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
+          <Button variant="contained" color="secondary" onClick={handleCreateRule} disabled={!name || !trigger || !action}>
+            Create Rule
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
