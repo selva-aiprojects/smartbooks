@@ -110,7 +110,7 @@ export default function ReconciliationPage() {
                 <TableCell>Date</TableCell>
                 <TableCell>Bank Statement Description</TableCell>
                 <TableCell>Type</TableCell>
-                <TableCell align="right">Amount ($)</TableCell>
+                <TableCell align="right">Amount (₹)</TableCell>
                 <TableCell align="center">Reconciliation Status</TableCell>
               </TableRow>
             </TableHead>
@@ -128,7 +128,7 @@ export default function ReconciliationPage() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <strong>${row.amount.toLocaleString()}</strong>
+                    <strong>₹{row.amount.toLocaleString('en-IN')}</strong>
                   </TableCell>
                   <TableCell align="center">
                     {row.matched ? (

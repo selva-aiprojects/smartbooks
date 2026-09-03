@@ -14,7 +14,7 @@ const columns: GridColDef[] = [
     field: 'balance', 
     headerName: 'Current Balance', 
     width: 160, 
-    valueFormatter: (value) => `$${value ?? 0}` 
+    valueFormatter: (value) => `₹${value ?? 0}` 
   },
 ];
 

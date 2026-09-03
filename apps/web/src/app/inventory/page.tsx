@@ -12,15 +12,15 @@ const columns: GridColDef[] = [
   { field: 'stock', headerName: 'In Stock', width: 120 },
   { 
     field: 'unitPrice', 
-    headerName: 'Unit Price ($)', 
+    headerName: 'Unit Price (₹)', 
     width: 140, 
-    valueFormatter: (value: any) => `$${(Number(value) || 0).toLocaleString()}` 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },
   { 
     field: 'totalValue', 
-    headerName: 'Stock Value ($)', 
+    headerName: 'Stock Value (₹)', 
     width: 150, 
-    valueFormatter: (value: any) => `$${(Number(value) || 0).toLocaleString()}` 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },
   {
     field: 'status',

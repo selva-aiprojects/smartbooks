@@ -35,7 +35,7 @@ const columns: GridColDef[] = [
   },
   { 
     field: 'totalAmount', 
-    headerName: 'Total Amount ($)', 
+    headerName: 'Total Amount (₹)', 
     width: 150, 
     valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },

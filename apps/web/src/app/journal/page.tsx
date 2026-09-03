@@ -12,9 +12,9 @@ const columns: GridColDef[] = [
   { field: 'status', headerName: 'Status', width: 120 },
   { 
     field: 'total', 
-    headerName: 'Total ($)', 
+    headerName: 'Total (₹)', 
     width: 130, 
-    valueFormatter: (value) => `$${value ?? 0}` 
+    valueFormatter: (value) => `₹${value ?? 0}` 
   },
 ];
 

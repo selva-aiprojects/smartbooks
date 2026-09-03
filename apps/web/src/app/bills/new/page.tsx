@@ -166,7 +166,7 @@ export default function NewBillPage() {
               />
 
               <TextField 
-                label="Cost ($)" 
+                label="Cost (₹)" 
                 type="number" 
                 value={item.unitPrice} 
                 onChange={(e) => {
@@ -191,7 +191,7 @@ export default function NewBillPage() {
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5" fontWeight="bold">
-              Total Payable: ${totalAmount.toLocaleString()}
+              Total Payable: ₹{totalAmount.toLocaleString('en-IN')}
             </Typography>
 
             <Button type="submit" variant="contained" color="error" size="large" disabled={submitting}>

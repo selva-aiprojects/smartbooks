@@ -6,9 +6,9 @@ import { AutoMode as AutomationIcon, Add as AddIcon } from '@mui/icons-material'
 
 const mockAutomations = [
   { id: '1', name: 'Auto-Send Overdue Invoice Reminders', trigger: 'Invoice Overdue by 7 Days', action: 'Send Email Reminder to Client', enabled: true },
-  { id: '2', name: 'Recurring Monthly Retainer Invoice', trigger: '1st Day of Every Month', action: 'Generate & Send $4,500 Invoice to Acme', enabled: true },
+  { id: '2', name: 'Recurring Monthly Retainer Invoice', trigger: '1st Day of Every Month', action: 'Generate & Send ₹4,500 Invoice to Acme', enabled: true },
   { id: '3', name: 'Auto-Post Bank Reconciliation Matches', trigger: 'Bank Match Confidence > 95%', action: 'Auto-Reconcile & Clear Line', enabled: false },
-  { id: '4', name: 'Low Cash Warning Alert', trigger: 'Cash Balance < $10,000', action: 'Send SMS & Push Alert to Admin', enabled: true },
+  { id: '4', name: 'Low Cash Warning Alert', trigger: 'Cash Balance < ₹10,000', action: 'Send SMS & Push Alert to Admin', enabled: true },
 ];
 
 export default function AutomationsPage() {

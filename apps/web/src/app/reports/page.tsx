@@ -97,7 +97,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Assets</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 0.5 }}>
-                  ${totalAssets.toLocaleString()}
+                  ${totalAssets.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -106,7 +106,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Liabilities</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#ef4444', mt: 0.5 }}>
-                  ${totalLiabilities.toLocaleString()}
+                  ${totalLiabilities.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -115,7 +115,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Equity</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 0.5 }}>
-                  ${totalEquity.toLocaleString()}
+                  ${totalEquity.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -131,7 +131,7 @@ export default function FinancialReportsPage() {
                   <TableRow sx={{ backgroundColor: '#f1f5f9' }}>
                     <TableCell>Code</TableCell>
                     <TableCell>Account Name</TableCell>
-                    <TableCell align="right">Balance ($)</TableCell>
+                    <TableCell align="right">Balance (₹)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -139,12 +139,12 @@ export default function FinancialReportsPage() {
                     <TableRow key={row.code}>
                       <TableCell><Chip label={row.code} size="small" variant="outlined" /></TableCell>
                       <TableCell>{row.name}</TableCell>
-                      <TableCell align="right">${row.amount.toLocaleString()}</TableCell>
+                      <TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow sx={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}>
                     <TableCell colSpan={2}><strong>Total Current Assets</strong></TableCell>
-                    <TableCell align="right"><strong>${totalAssets.toLocaleString()}</strong></TableCell>
+                    <TableCell align="right"><strong>₹{totalAssets.toLocaleString('en-IN')}</strong></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -161,7 +161,7 @@ export default function FinancialReportsPage() {
                   <TableRow sx={{ backgroundColor: '#f1f5f9' }}>
                     <TableCell>Code</TableCell>
                     <TableCell>Account Name</TableCell>
-                    <TableCell align="right">Balance ($)</TableCell>
+                    <TableCell align="right">Balance (₹)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -169,19 +169,19 @@ export default function FinancialReportsPage() {
                     <TableRow key={row.code}>
                       <TableCell><Chip label={row.code} size="small" color="error" variant="outlined" /></TableCell>
                       <TableCell>{row.name}</TableCell>
-                      <TableCell align="right">${row.amount.toLocaleString()}</TableCell>
+                      <TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                   {balanceSheet.equity.map((row) => (
                     <TableRow key={row.code}>
                       <TableCell><Chip label={row.code} size="small" color="success" variant="outlined" /></TableCell>
                       <TableCell>{row.name}</TableCell>
-                      <TableCell align="right">${row.amount.toLocaleString()}</TableCell>
+                      <TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow sx={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}>
                     <TableCell colSpan={2}><strong>Total Liabilities & Owner Equity</strong></TableCell>
-                    <TableCell align="right"><strong>${(totalLiabilities + totalEquity).toLocaleString()}</strong></TableCell>
+                    <TableCell align="right"><strong>₹{(totalLiabilities + totalEquity).toLocaleString('en-IN')}</strong></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -198,7 +198,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Operating Revenue</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 0.5 }}>
-                  ${totalRevenue.toLocaleString()}
+                  ${totalRevenue.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -207,7 +207,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Operating Expenses</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#ef4444', mt: 0.5 }}>
-                  ${totalExpenses.toLocaleString()}
+                  ${totalExpenses.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -216,7 +216,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Net Income (Profit)</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: netIncome >= 0 ? '#0284c7' : '#ef4444', mt: 0.5 }}>
-                  ${netIncome.toLocaleString()}
+                  ${netIncome.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -232,7 +232,7 @@ export default function FinancialReportsPage() {
                   <TableRow sx={{ backgroundColor: '#f1f5f9' }}>
                     <TableCell>Code</TableCell>
                     <TableCell>Account Name</TableCell>
-                    <TableCell align="right">Amount ($)</TableCell>
+                    <TableCell align="right">Amount (₹)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -240,19 +240,19 @@ export default function FinancialReportsPage() {
                     <TableRow key={row.code}>
                       <TableCell><Chip label={row.code} size="small" color="success" variant="outlined" /></TableCell>
                       <TableCell>{row.name}</TableCell>
-                      <TableCell align="right">${row.amount.toLocaleString()}</TableCell>
+                      <TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                   {incomeStatement.expenses.map((row) => (
                     <TableRow key={row.code}>
                       <TableCell><Chip label={row.code} size="small" color="error" variant="outlined" /></TableCell>
                       <TableCell>{row.name}</TableCell>
-                      <TableCell align="right">-${row.amount.toLocaleString()}</TableCell>
+                      <TableCell align="right">-₹{row.amount.toLocaleString('en-IN')}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow sx={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}>
                     <TableCell colSpan={2}><strong>Net Profit / (Loss)</strong></TableCell>
-                    <TableCell align="right"><strong>${netIncome.toLocaleString()}</strong></TableCell>
+                    <TableCell align="right"><strong>₹{netIncome.toLocaleString('en-IN')}</strong></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>

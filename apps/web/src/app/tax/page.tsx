@@ -35,21 +35,21 @@ export default function TaxPage() {
         <Card sx={{ borderLeft: '5px solid #10b981' }}>
           <CardContent>
             <Typography variant="body2" color="text.secondary">Output Tax (Collected)</Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 1 }}>$6,300</Typography>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 1 }}>₹6,300</Typography>
           </CardContent>
         </Card>
 
         <Card sx={{ borderLeft: '5px solid #0284c7' }}>
           <CardContent>
             <Typography variant="body2" color="text.secondary">Input Tax Credit (Paid)</Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 1 }}>$3,240</Typography>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 1 }}>₹3,240</Typography>
           </CardContent>
         </Card>
 
         <Card sx={{ borderLeft: '5px solid #8b5cf6' }}>
           <CardContent>
             <Typography variant="body2" color="text.secondary">Net Tax Payable to Govt</Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: '#8b5cf6', mt: 1 }}>${netTaxLiability.toLocaleString()}</Typography>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: '#8b5cf6', mt: 1 }}>₹{netTaxLiability.toLocaleString('en-IN')}</Typography>
           </CardContent>
         </Card>
       </Box>
@@ -62,8 +62,8 @@ export default function TaxPage() {
               <TableRow>
                 <TableCell>Tax Category</TableCell>
                 <TableCell>Default Rate</TableCell>
-                <TableCell align="right">Taxable Gross Amount ($)</TableCell>
-                <TableCell align="right">Tax Amount ($)</TableCell>
+                <TableCell align="right">Taxable Gross Amount (₹)</TableCell>
+                <TableCell align="right">Tax Amount (₹)</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -71,13 +71,13 @@ export default function TaxPage() {
                 <TableRow key={idx}>
                   <TableCell><strong>{row.type}</strong></TableCell>
                   <TableCell><Chip label={row.rate} size="small" variant="outlined" /></TableCell>
-                  <TableCell align="right">${row.taxableAmount.toLocaleString()}</TableCell>
-                  <TableCell align="right">${row.taxAmount.toLocaleString()}</TableCell>
+                  <TableCell align="right">₹{row.taxableAmount.toLocaleString('en-IN')}</TableCell>
+                  <TableCell align="right">₹{row.taxAmount.toLocaleString('en-IN')}</TableCell>
                 </TableRow>
               ))}
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
                 <TableCell colSpan={3}><strong>Net Tax Payable</strong></TableCell>
-                <TableCell align="right"><strong>${netTaxLiability.toLocaleString()}</strong></TableCell>
+                <TableCell align="right"><strong>₹{netTaxLiability.toLocaleString('en-IN')}</strong></TableCell>
               </TableRow>
             </TableBody>
           </Table>

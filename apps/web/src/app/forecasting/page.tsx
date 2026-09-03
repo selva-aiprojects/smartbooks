@@ -38,7 +38,7 @@ export default function ForecastingPage() {
         <Card sx={{ borderLeft: '5px solid #0284c7' }}>
           <CardContent>
             <Typography variant="body2" color="text.secondary">Projected Q4 Revenue</Typography>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 1 }}>$79,500</Typography>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 1 }}>₹79,500</Typography>
           </CardContent>
         </Card>
 
@@ -52,7 +52,7 @@ export default function ForecastingPage() {
 
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
-          6-Month Projected Revenue vs Actuals ($)
+          6-Month Projected Revenue vs Actuals (₹)
         </Typography>
         <Box sx={{ height: 350 }}>
           <LineChart

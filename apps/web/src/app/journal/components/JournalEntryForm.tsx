@@ -102,7 +102,7 @@ export default function JournalEntryForm() {
 
             <TextField
               fullWidth
-              label="Debit ($)"
+              label="Debit (₹)"
               type="number"
               value={line.debit}
               onChange={(e) => {
@@ -114,7 +114,7 @@ export default function JournalEntryForm() {
 
             <TextField
               fullWidth
-              label="Credit ($)"
+              label="Credit (₹)"
               type="number"
               value={line.credit}
               onChange={(e) => {

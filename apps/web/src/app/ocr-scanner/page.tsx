@@ -95,7 +95,7 @@ export default function OCRScannerPage() {
 
               <Box>
                 <Typography color="text.secondary" variant="caption">Total Extracted Amount</Typography>
-                <Typography fontWeight="bold" variant="h6" color="secondary.main">${ocrResult.totalAmount.toLocaleString()}</Typography>
+                <Typography fontWeight="bold" variant="h6" color="secondary.main">₹{ocrResult.totalAmount.toLocaleString('en-IN')}</Typography>
               </Box>
             </Box>
 
@@ -105,7 +105,7 @@ export default function OCRScannerPage() {
             {ocrResult.lineItems.map((item: any, idx: number) => (
               <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5, bgcolor: '#f8fafc', borderRadius: 1 }}>
                 <Typography variant="body2">{item.description}</Typography>
-                <Typography variant="body2" fontWeight="bold">${item.amount.toLocaleString()}</Typography>
+                <Typography variant="body2" fontWeight="bold">₹{item.amount.toLocaleString('en-IN')}</Typography>
               </Box>
             ))}
 

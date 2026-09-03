@@ -149,7 +149,7 @@ export default function NewInvoicePage() {
               />
 
               <TextField 
-                label="Price ($)" 
+                label="Price (₹)" 
                 type="number" 
                 value={item.unitPrice} 
                 onChange={(e) => {
@@ -174,7 +174,7 @@ export default function NewInvoicePage() {
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5" fontWeight="bold">
-              Total Amount: ${totalAmount.toLocaleString()}
+              Total Amount: ₹{totalAmount.toLocaleString('en-IN')}
             </Typography>
 
             <Button type="submit" variant="contained" size="large" disabled={submitting}>

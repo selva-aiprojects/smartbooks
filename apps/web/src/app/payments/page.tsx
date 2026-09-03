@@ -40,7 +40,7 @@ export default function PaymentsPage() {
                 <TableCell>Customer</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Payment Method</TableCell>
-                <TableCell align="right">Amount ($)</TableCell>
+                <TableCell align="right">Amount (₹)</TableCell>
                 <TableCell align="center">Status</TableCell>
               </TableRow>
             </TableHead>
@@ -51,7 +51,7 @@ export default function PaymentsPage() {
                   <TableCell><strong>{row.customer}</strong></TableCell>
                   <TableCell>{row.date}</TableCell>
                   <TableCell><Chip label={row.method} size="small" variant="outlined" /></TableCell>
-                  <TableCell align="right"><strong>${row.amount.toLocaleString()}</strong></TableCell>
+                  <TableCell align="right"><strong>₹{row.amount.toLocaleString('en-IN')}</strong></TableCell>
                   <TableCell align="center">
                     <Chip label={row.status} color={row.status === 'Completed' ? 'success' : 'warning'} size="small" />
                   </TableCell>

@@ -56,8 +56,8 @@ export default function JournalEntryPage({ params }: { params: { id: string } })
                 {entry.lines.map((line, index) => (
                   <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #eee' }}>
                     <Typography>Account: {line.account}</Typography>
-                    <Typography>Debit: ${line.debit}</Typography>
-                    <Typography>Credit: ${line.credit}</Typography>
+                    <Typography>Debit: ₹{line.debit}</Typography>
+                    <Typography>Credit: ₹{line.credit}</Typography>
                   </Box>
                 ))}
               </Box>

@@ -77,7 +77,7 @@ export default function AIAssistantPage() {
         ...prev,
         {
           sender: 'ai',
-          text: 'SmartBooks AI: Your Balance Sheet currently shows $33,500 in Total Assets balanced against $4,200 Accounts Payable and $29,300 Owner Equity. Year-to-Date Net Profit is $10,000.',
+          text: 'SmartBooks AI: Your Balance Sheet currently shows ₹33,500 in Total Assets balanced against ₹4,200 Accounts Payable and ₹29,300 Owner Equity. Year-to-Date Net Profit is ₹10,000.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -193,7 +193,7 @@ export default function AIAssistantPage() {
             />
 
             <TextField 
-              label="Amount ($)" 
+              label="Amount (₹)" 
               type="number" 
               placeholder="1800" 
               value={categorizeAmount} 
