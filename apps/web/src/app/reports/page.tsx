@@ -97,7 +97,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Assets</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#0284c7', mt: 0.5 }}>
-                  ${totalAssets.toLocaleString('en-IN')}
+                  ₹{totalAssets.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -106,7 +106,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Liabilities</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#ef4444', mt: 0.5 }}>
-                  ${totalLiabilities.toLocaleString('en-IN')}
+                  ₹{totalLiabilities.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -115,7 +115,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Equity</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 0.5 }}>
-                  ${totalEquity.toLocaleString('en-IN')}
+                  ₹{totalEquity.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -198,7 +198,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Operating Revenue</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981', mt: 0.5 }}>
-                  ${totalRevenue.toLocaleString('en-IN')}
+                  ₹{totalRevenue.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -207,7 +207,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Total Operating Expenses</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: '#ef4444', mt: 0.5 }}>
-                  ${totalExpenses.toLocaleString('en-IN')}
+                  ₹{totalExpenses.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
@@ -216,7 +216,7 @@ export default function FinancialReportsPage() {
               <CardContent>
                 <Typography color="text.secondary" variant="body2">Net Income (Profit)</Typography>
                 <Typography variant="h4" fontWeight="bold" sx={{ color: netIncome >= 0 ? '#0284c7' : '#ef4444', mt: 0.5 }}>
-                  ${netIncome.toLocaleString('en-IN')}
+                  ₹{netIncome.toLocaleString('en-IN')}
                 </Typography>
               </CardContent>
             </Card>
