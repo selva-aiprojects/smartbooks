@@ -197,8 +197,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const showGrowth = activePlan === 'growth' || activePlan === 'enterprise';
-  const showEnterprise = activePlan === 'enterprise';
+  // All modules are enabled for full-product access across every tenant/plan.
+  const showGrowth = true;
+  const showEnterprise = true;
 
   const renderNavSection = (items: typeof starterItems, headerTitle: string, tierColor: string, badgeLabel: string, isLocked: boolean = false) => (
     <Box sx={{ mb: 1.5, opacity: isLocked ? 0.6 : 1 }}>

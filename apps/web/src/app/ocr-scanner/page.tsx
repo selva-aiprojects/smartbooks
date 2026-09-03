@@ -110,7 +110,7 @@ export default function OCRScannerPage() {
             ))}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-              <Button variant="outlined">Discard</Button>
+              <Button variant="outlined" onClick={() => setOcrResult(null)}>Discard</Button>
               <Button variant="contained" color="secondary" onClick={() => alert('Expense created and posted to GL successfully!')}>
                 Confirm & Auto-Post to Journal
               </Button>
