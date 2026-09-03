@@ -5,6 +5,7 @@ import invoiceRoutes from './routes/invoice.routes';
 import billRoutes from './routes/bill.routes';
 import reconciliationRoutes from './routes/reconciliation.routes';
 import aiRoutes from './routes/ai.routes';
+import accountRoutes from './routes/account.routes';
 import { prisma } from './lib/prisma';
 import cors from 'cors';
 import { config } from './core/config';
@@ -36,6 +37,7 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/reconciliation', reconciliationRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/accounts', accountRoutes);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
