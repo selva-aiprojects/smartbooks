@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -26,7 +26,9 @@ import {
   Grid,
   IconButton,
   Tooltip,
-  Avatar
+  Avatar,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { 
   PersonAdd as AddUserIcon, 
@@ -38,8 +40,32 @@ import {
   Edit as EditIcon,
   HelpOutline as HelpIcon
 } from '@mui/icons-material';
-import { useTenant, TenantRole, TenantUser } from '../../context/TenantContext';
+import { TenantRole } from '../../context/TenantContext';
+import { apiFetch } from '../../lib/api';
 import Link from 'next/link';
+
+interface ManagedUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string | null;
+  status: string | null;
+  lastLogin?: string | null;
+  createdAt?: string;
+}
+
+interface CompanySettings {
+  id: string;
+  name: string;
+  subdomain: string;
+  plan: string;
+  seatLimit: number;
+  billingCycle: string;
+  subscriptionStatus: string;
+  gstin?: string | null;
+  displayName?: string | null;
+  users?: ManagedUser[];
+}
 
 const ROLE_PERMISSIONS: Record<TenantRole, { color: string; bgColor: string; description: string; modules: string[] }> = {
   'Owner': {
@@ -81,39 +107,90 @@ const ROLE_PERMISSIONS: Record<TenantRole, { color: string; bgColor: string; des
 };
 
 export default function TenantUsersPage() {
-  const { activeTenant, addTenantUser, updateTenantUser, deleteTenantUser } = useTenant();
+  const [company, setCompany] = useState<CompanySettings | null>(null);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<TenantRole>('Accountant');
-  const [selectedUserForEdit, setSelectedUserForEdit] = useState<TenantUser | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [cRes, uRes] = await Promise.all([
+        apiFetch('/api/me/company'),
+        apiFetch('/api/me/company/users'),
+      ]);
+      if (!cRes.ok || !uRes.ok) {
+        const data = await cRes.json().catch(() => ({}));
+        setError(data?.error || 'Unable to load tenant users');
+        return;
+      }
+      const cData = await cRes.json();
+      const uData = await uRes.json();
+      setCompany(cData);
+      setUsers(uData);
+    } catch (e) {
+      setError('Unable to reach the backend API. Users are read-only right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) return;
-
-    addTenantUser(activeTenant.id, {
-      name,
-      email,
-      role,
-      status: 'Active'
-    });
-
-    setOpenAddModal(false);
-    setName('');
-    setEmail('');
-    setRole('Accountant');
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await apiFetch('/api/me/company/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, role }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to add user');
+        return;
+      }
+      setOpenAddModal(false);
+      setName('');
+      setEmail('');
+      setRole('Accountant');
+      await loadData();
+    } catch (e) {
+      alert('Unable to reach the backend API');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleToggleStatus = (user: TenantUser) => {
+  const handleToggleStatus = async (user: ManagedUser) => {
     const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
-    updateTenantUser(activeTenant.id, user.id, { status: newStatus });
+    try {
+      const res = await apiFetch(`/api/me/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) return;
+      await loadData();
+    } catch (e) { /* ignore */ }
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (confirm('Are you sure you want to remove this user from the tenant organization?')) {
-      deleteTenantUser(activeTenant.id, userId);
+      try {
+        const res = await apiFetch(`/api/me/users/${userId}`, { method: 'DELETE' });
+        if (res.ok) await loadData();
+      } catch (e) { /* ignore */ }
     }
   };
 
@@ -128,7 +205,7 @@ export default function TenantUsersPage() {
               Tenant User Management & RBAC
             </Typography>
             <Chip
-              label={`${activeTenant.users.length} / ${activeTenant.seatLimit || 15} Seats Used`}
+              label={`${users.length} / ${company?.seatLimit || 15} Seats Used`}
               size="small"
               color="primary"
               variant="outlined"
@@ -136,7 +213,7 @@ export default function TenantUsersPage() {
             />
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Active Organization: <strong style={{ color: '#0284c7' }}>{activeTenant.name}</strong> ({activeTenant.edition} · Schema: {activeTenant.schema} · Plan: {(activeTenant.plan || 'growth').toUpperCase()})
+            Active Organization: <strong style={{ color: '#0284c7' }}>{company?.name}</strong> ({company?.subdomain} · Plan: {(company?.plan || 'growth').toUpperCase()})
           </Typography>
         </Box>
 
@@ -176,11 +253,23 @@ export default function TenantUsersPage() {
         </Stack>
       </Box>
 
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8, flexDirection: 'column', gap: 2 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Loading users from live backend...</Typography>
+        </Box>
+      )}
+
+      {!loading && error && (
+        <Alert severity="error" sx={{ borderRadius: 2, mb: 3 }}>{error}</Alert>
+      )}
+
       {/* Role Summary Badges */}
+      {!loading && !error && (
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {(Object.keys(ROLE_PERMISSIONS) as TenantRole[]).map((r) => {
           const config = ROLE_PERMISSIONS[r];
-          const count = activeTenant.users.filter(u => u.role === r).length;
+          const count = users.filter(u => u.role === r).length;
           return (
             <Grid item xs={12} sm={6} md={2} key={r}>
               <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#ffffff', border: '1px solid #e2e8f0' }}>
@@ -196,8 +285,10 @@ export default function TenantUsersPage() {
           );
         })}
       </Grid>
+      )}
 
       {/* Users Data Table */}
+      {!loading && !error && (
       <TableContainer component={Paper} sx={{ borderRadius: 3.5, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)', border: '1px solid #e2e8f0' }}>
         <Table>
           <TableHead sx={{ bgcolor: '#f8fafc' }}>
@@ -211,7 +302,7 @@ export default function TenantUsersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {activeTenant.users.map((user) => {
+            {users.map((user) => {
               const roleConfig = ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS['Accountant'];
               return (
                 <TableRow key={user.id} hover>
@@ -283,16 +374,17 @@ export default function TenantUsersPage() {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {/* Add User Modal */}
       <Dialog open={openAddModal} onClose={() => setOpenAddModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 'bold' }}>
-          Add User to {activeTenant.name}
+          Add User to {company?.name}
         </DialogTitle>
         <Box component="form" onSubmit={handleAddUser}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Provision a new user specifically isolated to tenant schema <strong>{activeTenant.schema}</strong>.
+              Provision a new user specifically isolated to tenant schema <strong>{company?.subdomain}</strong>.
             </Typography>
 
             <TextField
@@ -346,8 +438,8 @@ export default function TenantUsersPage() {
           </DialogContent>
           <DialogActions sx={{ p: 2.5 }}>
             <Button onClick={() => setOpenAddModal(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" sx={{ bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' } }}>
-              Create User
+            <Button type="submit" variant="contained" disabled={submitting} sx={{ bgcolor: '#0284c7', '&:hover': { bgcolor: '#0369a1' } }}>
+              {submitting ? 'Creating...' : 'Create User'}
             </Button>
           </DialogActions>
         </Box>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Grid, Paper, Card, CardContent, Button, Chip, Avatar,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Stack, Divider,
   Alert, LinearProgress, Tabs, Tab, IconButton, Tooltip, Badge,
-  Switch, FormControlLabel, RadioGroup, Radio
+  Switch, FormControlLabel, RadioGroup, Radio, CircularProgress
 } from '@mui/material';
 import {
   AddBusiness as AddTenantIcon,
@@ -27,7 +27,38 @@ import {
   SaveAlt as SaveIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { useTenant, Tenant } from '../../context/TenantContext';
+import { useTenant } from '../../context/TenantContext';
+import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../lib/api';
+import { useRouter } from 'next/navigation';
+
+function isSuperAdminEmail(email?: string): boolean {
+  const e = (email || '').toLowerCase();
+  return e.includes('superadmin') || e.endsWith('@smartbooks.com') || e.endsWith('@smartbooks.ai');
+}
+
+interface CompanyUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  role?: string | null;
+  status?: string | null;
+}
+
+interface CompanyAdmin {
+  id: string;
+  name: string;
+  subdomain: string;
+  currency: string;
+  plan: string;
+  seatLimit: number;
+  billingCycle: string;
+  subscriptionStatus: string;
+  nextBillingDate?: string | null;
+  gstin?: string | null;
+  displayName?: string | null;
+  users: CompanyUser[];
+}
 
 const PLAN_COLORS: Record<string, { main: string; bg: string; border: string }> = {
   starter:    { main: '#10b981', bg: '#ecfdf5', border: '#a7f3d0' },
@@ -50,9 +81,26 @@ const MOCK_TICKETS = [
 ];
 
 export default function NexusAdminPage() {
-  const { tenants, updateTenantPlan } = useTenant();
+  const { switchTenant, tenants: contextTenants } = useTenant();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [accessChecked, setAccessChecked] = useState(false);
+
+  useEffect(() => {
+    const email = user?.email;
+    if (!isSuperAdminEmail(email)) {
+      router.replace('/login');
+      return;
+    }
+    setAccessChecked(true);
+  }, [user, router]);
 
   const [activeTab, setActiveTab] = useState(0);
+
+  // ── API-driven company list ──────────────────────────────────────────────────
+  const [tenants, setTenants] = useState<CompanyAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Provision Modal ──────────────────────────────────────────────────────────
   const [openProvisionModal, setOpenProvisionModal] = useState(false);
@@ -65,13 +113,14 @@ export default function NexusAdminPage() {
   const [adminPhone, setAdminPhone] = useState('');
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [welcomeKitTenant, setWelcomeKitTenant] = useState<{ name: string; adminEmail: string; schema: string; plan: string } | null>(null);
+  const [provisionMsg, setProvisionMsg] = useState<string | null>(null);
 
   // ── Welcome Kit Modal ────────────────────────────────────────────────────────
   const [openWelcomeKitModal, setOpenWelcomeKitModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // ── Edit Subscription Modal ──────────────────────────────────────────────────
-  const [editSubTenant, setEditSubTenant] = useState<Tenant | null>(null);
+  const [editSubTenant, setEditSubTenant] = useState<CompanyAdmin | null>(null);
   const [editPlan, setEditPlan] = useState<'starter' | 'growth' | 'enterprise'>('growth');
   const [editSeats, setEditSeats] = useState(15);
   const [editBilling, setEditBilling] = useState<'Monthly' | 'Annual'>('Annual');
@@ -81,28 +130,68 @@ export default function NexusAdminPage() {
   const [subSaved, setSubSaved] = useState(false);
 
   // ── Password Reset Modal ─────────────────────────────────────────────────────
-  const [pwdResetTenant, setPwdResetTenant] = useState<Tenant | null>(null);
-  const [pwdResetEmail, setPwdResetEmail] = useState('');
+  const [pwdResetTenant, setPwdResetTenant] = useState<CompanyAdmin | null>(null);
+  const [pwdResetUser, setPwdResetUser] = useState<CompanyUser | null>(null);
   const [pwdResetSent, setPwdResetSent] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
+
+  const loadCompanies = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch('/api/admin/companies');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error || 'Failed to load companies');
+        return;
+      }
+      const data = await res.json();
+      setTenants(data);
+    } catch (e) {
+      setError('Unable to reach admin API. Is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadCompanies(); }, [loadCompanies]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleProvision = async () => {
     if (!orgName || !adminEmail || !adminName) return;
     setIsProvisioning(true);
-    await new Promise(r => setTimeout(r, 1200));
-    const schemaId = `tenant_${(subdomain || orgName).toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    setWelcomeKitTenant({ name: orgName, adminEmail, schema: schemaId, plan });
-    setIsProvisioning(false);
-    setOpenProvisionModal(false);
-    setOpenWelcomeKitModal(true);
+    setProvisionMsg(null);
+    try {
+      const res = await apiFetch('/api/admin/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: orgName, subdomain, currency, plan, adminName, adminEmail, adminPhone }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setProvisionMsg(data?.error || 'Provisioning failed');
+        return;
+      }
+      const data = await res.json();
+      const created = data.company;
+      const schemaId = `tenant_${created.subdomain.replace(/[^a-z0-9]/g, '_')}`;
+      setWelcomeKitTenant({ name: created.name, adminEmail: created.adminEmail || adminEmail, schema: schemaId, plan: created.plan });
+      setOpenProvisionModal(false);
+      setOpenWelcomeKitModal(true);
+      await loadCompanies();
+    } catch (e) {
+      setProvisionMsg('Unable to reach admin API');
+    } finally {
+      setIsProvisioning(false);
+    }
   };
 
-  const openEditSub = (tenant: Tenant) => {
+  const openEditSub = (tenant: CompanyAdmin) => {
     setEditSubTenant(tenant);
-    setEditPlan(tenant.plan);
+    setEditPlan((tenant.plan as 'starter' | 'growth' | 'enterprise') || 'growth');
     setEditSeats(tenant.seatLimit || 15);
-    setEditBilling(tenant.billingCycle || 'Annual');
-    setEditStatus(tenant.subscriptionStatus || 'Active');
+    setEditBilling((tenant.billingCycle as 'Monthly' | 'Annual') || 'Annual');
+    setEditStatus((tenant.subscriptionStatus as 'Active' | 'Past Due' | 'Trial') || 'Active');
     setEditRenewal(tenant.nextBillingDate || '');
     setSubSaved(false);
   };
@@ -110,23 +199,61 @@ export default function NexusAdminPage() {
   const handleSaveSub = async () => {
     if (!editSubTenant) return;
     setIsSavingSub(true);
-    await new Promise(r => setTimeout(r, 900));
-    updateTenantPlan(editSubTenant.id, editPlan);
-    setIsSavingSub(false);
-    setSubSaved(true);
-    setTimeout(() => setEditSubTenant(null), 1200);
+    try {
+      const res = await apiFetch(`/api/admin/companies/${editSubTenant.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: editPlan, seatLimit: editSeats, billingCycle: editBilling, subscriptionStatus: editStatus, nextBillingDate: editRenewal }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to update subscription');
+        return;
+      }
+      await loadCompanies();
+      setSubSaved(true);
+      setTimeout(() => setEditSubTenant(null), 1200);
+    } catch (e) {
+      alert('Unable to reach admin API');
+    } finally {
+      setIsSavingSub(false);
+    }
   };
 
-  const openPwdReset = (tenant: Tenant) => {
+  const openPwdReset = (tenant: CompanyAdmin) => {
     setPwdResetTenant(tenant);
-    setPwdResetEmail(tenant.users?.[0]?.email || '');
+    setPwdResetUser(tenant.users?.[0] || null);
     setPwdResetSent(false);
+    setResetToken(null);
   };
 
   const handleSendPwdReset = async () => {
+    if (!pwdResetUser) return;
     setPwdResetSent(false);
-    await new Promise(r => setTimeout(r, 700));
-    setPwdResetSent(true);
+    setResetToken(null);
+    try {
+      const res = await apiFetch(`/api/admin/users/${pwdResetUser.id}/reset-password`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to send reset');
+        return;
+      }
+      const data = await res.json();
+      setResetToken(data.resetToken || null);
+      setPwdResetSent(true);
+    } catch (e) {
+      alert('Unable to reach admin API');
+    }
+  };
+
+  const handleInspect = (tenant: CompanyAdmin) => {
+    const ctx = contextTenants.find(t => t.id === `tenant-${tenant.subdomain}`) || contextTenants.find(t => t.name === tenant.name);
+    if (ctx) {
+      switchTenant(ctx.id);
+      window.location.href = '/gateway';
+    } else {
+      alert(`No local workspace view for "${tenant.name}". It was provisioned against the live backend.`);
+    }
   };
 
   const welcomeKitText = welcomeKitTenant
@@ -143,6 +270,8 @@ export default function NexusAdminPage() {
   const openTickets = MOCK_TICKETS.filter(t => t.status === 'Open').length;
   const activeSeats = tenants.reduce((sum, t) => sum + (t.users?.length || 0), 0);
   const totalSeatLimit = tenants.reduce((sum, t) => sum + (t.seatLimit || 15), 0);
+
+  if (!accessChecked) return null;
 
   return (
     <Box sx={{ flexGrow: 1, pb: 6 }}>
@@ -202,8 +331,25 @@ export default function NexusAdminPage() {
         <Tab label="Schema & System Health" icon={<DnsIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
       </Tabs>
 
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8, flexDirection: 'column', gap: 2 }}>
+          <CircularProgress />
+          <Typography variant="body2" color="text.secondary">Loading tenant data from live backend...</Typography>
+        </Box>
+      )}
+
+      {!loading && error && (
+        <Alert severity="error" sx={{ borderRadius: 2, mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {!loading && !error && tenants.length === 0 && (
+        <Alert severity="info" sx={{ borderRadius: 2, mb: 3 }}>No tenant organizations found.</Alert>
+      )}
+
       {/* TAB 0: Tenant Directory */}
-      {activeTab === 0 && (
+      {!loading && !error && activeTab === 0 && (
         <Paper elevation={0} sx={{ borderRadius: 3.5, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           <TableContainer>
             <Table>
@@ -237,8 +383,8 @@ export default function NexusAdminPage() {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight={600}>{tenant.edition}</Typography>
-                        <Chip label={tenant.schema} size="small" sx={{ fontSize: 10, height: 18, mt: 0.5, fontFamily: 'monospace' }} />
+                        <Typography variant="body2" fontWeight={600}>{tenant.displayName || tenant.name}</Typography>
+                        <Chip label={`tenant_${tenant.subdomain}`} size="small" sx={{ fontSize: 10, height: 18, mt: 0.5, fontFamily: 'monospace' }} />
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -286,7 +432,7 @@ export default function NexusAdminPage() {
                           </Tooltip>
                           <Tooltip title="Send Welcome Kit">
                             <IconButton size="small" sx={{ color: '#10b981' }} onClick={() => {
-                              setWelcomeKitTenant({ name: tenant.name, adminEmail: tenant.users?.[0]?.email || '', schema: tenant.schema, plan: tenant.plan });
+                              setWelcomeKitTenant({ name: tenant.name, adminEmail: tenant.users?.[0]?.email || '', schema: `tenant_${tenant.subdomain}`, plan: tenant.plan });
                               setAdminName(tenant.users?.[0]?.name || '');
                               setAdminEmail(tenant.users?.[0]?.email || '');
                               setOpenWelcomeKitModal(true);
@@ -295,7 +441,7 @@ export default function NexusAdminPage() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Inspect Workspace">
-                            <IconButton size="small" sx={{ color: '#64748b' }}>
+                            <IconButton size="small" sx={{ color: '#64748b' }} onClick={() => handleInspect(tenant)}>
                               <InspectIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -372,7 +518,7 @@ export default function NexusAdminPage() {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>
                       <Typography variant="subtitle1" fontWeight={700}>{tenant.name}</Typography>
-                      <Chip label={tenant.schema} size="small" sx={{ mt: 0.5, fontSize: 10, height: 18, fontFamily: 'monospace', bgcolor: '#f1f5f9' }} />
+                      <Chip label={`tenant_${tenant.subdomain}`} size="small" sx={{ mt: 0.5, fontSize: 10, height: 18, fontFamily: 'monospace', bgcolor: '#f1f5f9' }} />
                     </Box>
                     <Chip icon={<CheckIcon style={{ fontSize: 12 }} />} label="Schema Healthy" size="small" color="success" sx={{ fontWeight: 700 }} />
                   </Box>
@@ -530,17 +676,31 @@ export default function NexusAdminPage() {
 
           {pwdResetSent && (
             <Alert severity="success" sx={{ borderRadius: 2 }}>
-              Reset link sent to <strong>{pwdResetEmail}</strong>. Valid for 24 hours.
+              Reset link generated for <strong>{pwdResetUser?.email}</strong>. Valid for 24 hours.
+              {resetToken && (
+                <Box component="div" sx={{ mt: 1, fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', p: 1, borderRadius: 1 }}>
+                  Reset token: {resetToken}
+                </Box>
+              )}
             </Alert>
           )}
 
           <FormControl fullWidth size="small">
             <InputLabel>Send Reset To</InputLabel>
-            <Select value={pwdResetEmail} label="Send Reset To" onChange={(e) => setPwdResetEmail(e.target.value)}>
+            <Select
+              value={pwdResetUser?.id || ''}
+              label="Send Reset To"
+              onChange={(e) => {
+                const id = e.target.value as string;
+                setPwdResetUser(pwdResetTenant?.users?.find(u => u.id === id) || null);
+                setPwdResetSent(false);
+                setResetToken(null);
+              }}
+            >
               {pwdResetTenant?.users?.map(u => (
-                <MenuItem key={u.id} value={u.email}>
+                <MenuItem key={u.id} value={u.id}>
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
+                    <Typography variant="body2" fontWeight={600}>{u.name || u.email}</Typography>
                     <Typography variant="caption" color="text.secondary">{u.email} · {u.role}</Typography>
                   </Box>
                 </MenuItem>
@@ -565,7 +725,7 @@ export default function NexusAdminPage() {
             variant="contained"
             startIcon={<SendIcon />}
             onClick={handleSendPwdReset}
-            disabled={!pwdResetEmail || pwdResetSent}
+            disabled={!pwdResetUser || pwdResetSent}
             sx={{ bgcolor: '#f59e0b', '&:hover': { bgcolor: '#d97706' }, color: '#000' }}
           >
             {pwdResetSent ? 'Reset Sent ✓' : 'Send Reset Link'}
@@ -584,6 +744,7 @@ export default function NexusAdminPage() {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {provisionMsg && <Alert severity="error" sx={{ borderRadius: 2 }}>{provisionMsg}</Alert>}
           <TextField label="Organization / Company Name *" value={orgName} onChange={(e) => setOrgName(e.target.value)} fullWidth required placeholder="e.g. Zenith Pharma Pvt Ltd" />
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>

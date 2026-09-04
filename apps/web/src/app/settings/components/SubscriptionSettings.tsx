@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -26,7 +26,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   WorkspacePremium as PremiumIcon,
@@ -39,27 +40,74 @@ import {
   Speed as SpeedIcon,
   Storage as StorageIcon
 } from '@mui/icons-material';
-import { useTenant } from '../../../context/TenantContext';
+import { apiFetch } from '../../../lib/api';
+
+interface PlanInfo {
+  id: string;
+  name: string;
+  subdomain: string;
+  plan: string;
+  seatLimit: number;
+  billingCycle: string;
+  subscriptionStatus: string;
+  gstin?: string | null;
+  displayName?: string | null;
+  users?: { id: string }[];
+}
 
 export default function SubscriptionSettings() {
-  const { activeTenant, updateTenantPlan, isSuperAdmin } = useTenant();
+  const [company, setCompany] = useState<PlanInfo | null>(null);
+  const [loading, setLoading] = useState(true);
   const [openUpgradeModal, setOpenUpgradeModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'growth' | 'enterprise'>(activeTenant.plan || 'growth');
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'growth' | 'enterprise'>('growth');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const activePlan = activeTenant.plan || 'growth';
-  const userCount = activeTenant.users?.length || 0;
-  const seatLimit = activeTenant.seatLimit || (activePlan === 'starter' ? 5 : activePlan === 'growth' ? 15 : 100);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch('/api/me/company');
+        if (res.ok) {
+          const c = await res.json();
+          setCompany(c);
+          setSelectedPlan((c.plan as 'starter' | 'growth' | 'enterprise') || 'growth');
+        }
+      } catch (e) { /* ignore */ } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const activePlan = company?.plan || 'growth';
+  const userCount = company?.users?.length || 0;
+  const seatLimit = company?.seatLimit || (activePlan === 'starter' ? 5 : activePlan === 'growth' ? 15 : 100);
   const seatPercentage = Math.min(Math.round((userCount / seatLimit) * 100), 100);
 
-  const handlePlanUpgrade = () => {
+  const handlePlanUpgrade = async () => {
+    if (!company) return;
     setIsUpdating(true);
-    setTimeout(() => {
-      updateTenantPlan(activeTenant.id, selectedPlan);
-      setIsUpdating(false);
+    setNotice(null);
+    const planSeatLimit = selectedPlan === 'starter' ? 5 : selectedPlan === 'growth' ? 15 : 100;
+    try {
+      const res = await apiFetch(`/api/me/company`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selectedPlan, seatLimit: planSeatLimit }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.error || 'Failed to update subscription');
+        return;
+      }
+      const data = await res.json();
+      setCompany(data.company);
       setOpenUpgradeModal(false);
       alert(`Tenant Subscription updated to ${selectedPlan.toUpperCase()} Plan!`);
-    }, 600);
+    } catch (e) {
+      alert('Unable to reach the backend API');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getPlanColor = (plan: string) => {
@@ -118,12 +166,12 @@ export default function SubscriptionSettings() {
               />
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Organization: <strong>{activeTenant.name}</strong> ({activeTenant.edition})
+              Organization: <strong>{company?.name}</strong> ({company?.subdomain})
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Chip icon={<StorageIcon style={{ fontSize: 14 }} />} label={`Schema: ${activeTenant.schema}`} size="small" variant="outlined" />
-              <Chip icon={<VerifiedIcon style={{ fontSize: 14 }} />} label={`Status: ${activeTenant.subscriptionStatus || 'Active'}`} size="small" color="success" />
-              <Chip icon={<SpeedIcon style={{ fontSize: 14 }} />} label={`Cycle: ${activeTenant.billingCycle || 'Annual'}`} size="small" variant="outlined" />
+              <Chip icon={<StorageIcon style={{ fontSize: 14 }} />} label={`Schema: ${company?.subdomain}`} size="small" variant="outlined" />
+              <Chip icon={<VerifiedIcon style={{ fontSize: 14 }} />} label={`Status: ${company?.subscriptionStatus || 'Active'}`} size="small" color="success" />
+              <Chip icon={<SpeedIcon style={{ fontSize: 14 }} />} label={`Cycle: ${company?.billingCycle || 'Annual'}`} size="small" variant="outlined" />
             </Box>
           </Grid>
 
@@ -171,7 +219,7 @@ export default function SubscriptionSettings() {
               </Box>
 
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                Active users provisioned under the <strong>{activeTenant.name}</strong> tenant workspace.
+                Active users provisioned under the <strong>{company?.name}</strong> tenant workspace.
               </Typography>
 
               <Box sx={{ mb: 2 }}>
@@ -210,7 +258,7 @@ export default function SubscriptionSettings() {
               </Alert>
 
               <Typography variant="caption" color="text.secondary" lineHeight={1.5} display="block">
-                All ledger records, user credentials, and subscription entitlements for <strong>{activeTenant.name}</strong> are strictly isolated within dedicated database schema <code>{activeTenant.schema}</code>. Cross-tenant subscription viewing or unauthorized data switching is strictly blocked at context boundary.
+                All ledger records, user credentials, and subscription entitlements for <strong>{company?.name}</strong> are strictly isolated within dedicated database schema <code>{company?.subdomain}</code>. Cross-tenant subscription viewing or unauthorized data switching is strictly blocked at context boundary.
               </Typography>
             </CardContent>
           </Card>
@@ -278,7 +326,7 @@ export default function SubscriptionSettings() {
         </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            Select a new subscription tier for <strong>{activeTenant.name}</strong>. Modules will be updated immediately upon plan change.
+            Select a new subscription tier for <strong>{company?.name}</strong>. Modules will be updated immediately upon plan change.
           </Typography>
 
           <FormControl fullWidth sx={{ mt: 1 }}>

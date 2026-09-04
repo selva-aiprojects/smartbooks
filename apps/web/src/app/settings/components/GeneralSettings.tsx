@@ -1,18 +1,56 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, TextField, Button, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
-import { useAuth } from '../../../context/AuthContext';
+import { useState, useEffect } from 'react';
+import { Box, TextField, Button, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Chip, Alert, CircularProgress } from '@mui/material';
+import { apiFetch } from '../../../lib/api';
 
 export default function GeneralSettings() {
-  const { user } = useAuth();
-  const [companyName, setCompanyName] = useState(user?.company?.name || 'SmartBooks Demo Corp');
-  const [currency, setCurrency] = useState(user?.company?.currency || 'INR');
-  const [fiscalYearStart, setFiscalYearStart] = useState('April (1st April - 31st March)');
+  const [companyName, setCompanyName] = useState('');
+  const [currency, setCurrency] = useState('INR');
+  const [gstin, setGstin] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch('/api/me/company');
+        if (res.ok) {
+          const c = await res.json();
+          setCompanyName(c.name || '');
+          setCurrency(c.currency || 'INR');
+          setGstin(c.gstin || '');
+          setContactEmail(c.contactEmail || '');
+        }
+      } catch (e) { /* ignore */ } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Tenant organization settings updated successfully!');
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await apiFetch('/api/me/company', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: companyName, currency, gstin, contactEmail }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMsg(data?.error || 'Failed to save settings');
+        return;
+      }
+      setMsg('Organization settings saved successfully!');
+    } catch (e) {
+      setMsg('Unable to reach the backend API');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -24,39 +62,52 @@ export default function GeneralSettings() {
         <Chip label="Active Tenant" color="success" size="small" />
       </Box>
 
-      <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-        <TextField
-          label="Company / Tenant Name"
-          value={companyName}
-          onChange={(e) => setCompanyName(e.target.value)}
-          fullWidth
-        />
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
+      )}
 
-        <FormControl fullWidth>
-          <InputLabel>Base Currency</InputLabel>
-          <Select
-            value={currency}
-            label="Base Currency"
-            onChange={(e) => setCurrency(e.target.value)}
-          >
-            <MenuItem value="INR">INR (₹ - Indian Rupee)</MenuItem>
-            <MenuItem value="USD">USD ($ - US Dollar)</MenuItem>
-            <MenuItem value="EUR">EUR (€ - Euro)</MenuItem>
-            <MenuItem value="GBP">GBP (£ - British Pound)</MenuItem>
-          </Select>
-        </FormControl>
+      {!loading && (
+        <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {msg && <Alert severity={msg.startsWith('Unable') || msg.startsWith('Failed') ? 'error' : 'success'} onClose={() => setMsg(null)}>{msg}</Alert>}
+          <TextField
+            label="Company / Tenant Name"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="GSTIN"
+            value={gstin}
+            onChange={(e) => setGstin(e.target.value)}
+            fullWidth
+            placeholder="33AAACX9876E1Z5"
+          />
+          <FormControl fullWidth>
+            <InputLabel>Base Currency</InputLabel>
+            <Select
+              value={currency}
+              label="Base Currency"
+              onChange={(e) => setCurrency(e.target.value)}
+            >
+              <MenuItem value="INR">INR (₹ - Indian Rupee)</MenuItem>
+              <MenuItem value="USD">USD ($ - US Dollar)</MenuItem>
+              <MenuItem value="EUR">EUR (€ - Euro)</MenuItem>
+              <MenuItem value="GBP">GBP (£ - British Pound)</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="Contact Email"
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            fullWidth
+          />
 
-        <TextField
-          label="Fiscal Year Start Month"
-          value={fiscalYearStart}
-          onChange={(e) => setFiscalYearStart(e.target.value)}
-          fullWidth
-        />
-
-        <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: 2 }}>
-          Save Organization Settings
-        </Button>
-      </Box>
+          <Button type="submit" variant="contained" disabled={saving} sx={{ alignSelf: 'flex-start', mt: 1, borderRadius: 2 }}>
+            {saving ? 'Saving...' : 'Save Organization Settings'}
+          </Button>
+        </Box>
+      )}
     </Paper>
   );
 }

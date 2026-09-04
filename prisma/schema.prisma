@@ -8,41 +8,54 @@ datasource db {
 }
 
 model Company {
-  id               String            @id @default(uuid())
-  name             String
-  subdomain        String            @unique
-  currency         String            @default("INR")
-  plan             String            @default("enterprise")
-  contactEmail     String?
-  contactPhone     String?
-  entityType       String?           @default("parent")
-  displayName      String?
-  parentCompanyId  String?
-  parentCompany    Company?          @relation("EntityHierarchy", fields: [parentCompanyId], references: [id])
-  childCompanies   Company[]         @relation("EntityHierarchy")
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  users            User[]
-  roles            Role[]
-  accounts         Account[]
-  entries          JournalEntry[]
-  customers        Customer[]
-  invoices         Invoice[]
-  vendors          Vendor[]
-  bills            Bill[]
-  bankTransactions BankTransaction[]
+  id                String            @id @default(uuid())
+  name              String
+  subdomain         String            @unique
+  currency          String            @default("INR")
+  plan              String            @default("enterprise")
+  contactEmail      String?
+  contactPhone      String?
+  seatLimit         Int               @default(15)
+  billingCycle      String            @default("Annual")
+  subscriptionStatus String           @default("Active")
+  nextBillingDate   String?
+  gstin             String?
+  twoFactorEnabled  Boolean           @default(false)
+  sessionTimeoutMinutes Int           @default(30)
+  entityType        String?           @default("parent")
+  displayName       String?
+  parentCompanyId   String?
+  parentCompany     Company?          @relation("EntityHierarchy", fields: [parentCompanyId], references: [id])
+  childCompanies    Company[]         @relation("EntityHierarchy")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  users             User[]
+  roles             Role[]
+  accounts          Account[]
+  entries           JournalEntry[]
+  customers         Customer[]
+  invoices          Invoice[]
+  vendors           Vendor[]
+  bills             Bill[]
+  bankTransactions  BankTransaction[]
 }
 
 model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  password       String
-  companyId      String
-  company        Company        @relation(fields: [companyId], references: [id])
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  roles          Role[]
-  journalEntries JournalEntry[]
+  id                 String         @id @default(uuid())
+  email              String         @unique
+  password           String
+  name               String?
+  role               String?        @default("Tenant Admin")
+  status             String?        @default("Active")
+  lastLogin          DateTime?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  companyId          String
+  company            Company        @relation(fields: [companyId], references: [id])
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  roles              Role[]
+  journalEntries     JournalEntry[]
 
   @@index([companyId])
 }

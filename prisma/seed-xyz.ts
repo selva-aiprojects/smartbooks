@@ -72,22 +72,22 @@ const COMPANIES = [
 
 // ─── Users per Company ──────────────────────────────────────────────────────
 
-const USERS_PER_COMPANY: Record<string, { name: string; email: string }[]> = {
+const USERS_PER_COMPANY: Record<string, { name: string; email: string; role: string }[]> = {
   'xyz-corp': [
-    { name: 'Arjun Kapoor', email: 'arjun.kapoor@xyzcorp.in' },
-    { name: 'Deepa Rajan', email: 'deepa.rajan@xyzcorp.in' },
-    { name: 'Vikram Iyer', email: 'vikram.iyer@xyzcorp.in' },
-    { name: 'Priya Menon', email: 'priya.menon@xyzcorp.in' },
-    { name: 'Sanjay Gupta', email: 'sanjay.gupta@xyzcorp.in' },
-    { name: 'Lakshmi Devi', email: 'lakshmi.devi@xyzcorp.in' },
+    { name: 'Arjun Kapoor', email: 'arjun.kapoor@xyzcorp.in', role: 'Owner' },
+    { name: 'Deepa Rajan', email: 'deepa.rajan@xyzcorp.in', role: 'Tenant Admin' },
+    { name: 'Vikram Iyer', email: 'vikram.iyer@xyzcorp.in', role: 'Finance Manager' },
+    { name: 'Priya Menon', email: 'priya.menon@xyzcorp.in', role: 'Accountant' },
+    { name: 'Sanjay Gupta', email: 'sanjay.gupta@xyzcorp.in', role: 'Inventory Manager' },
+    { name: 'Lakshmi Devi', email: 'lakshmi.devi@xyzcorp.in', role: 'Finance Manager' },
   ],
   'xyz-shipment': [
-    { name: 'Rahul Nair', email: 'rahul.nair@xyzshipment.in' },
-    { name: 'Meera Krishnan', email: 'meera.krishnan@xyzshipment.in' },
+    { name: 'Rahul Nair', email: 'rahul.nair@xyzshipment.in', role: 'Owner' },
+    { name: 'Meera Krishnan', email: 'meera.krishnan@xyzshipment.in', role: 'Tenant Admin' },
   ],
   'xyz-warehouses': [
-    { name: 'Karthik Subramanian', email: 'karthik.subramanian@xyzwarehouses.in' },
-    { name: 'Lakshmi Prasad', email: 'lakshmi.prasad@xyzwarehouses.in' },
+    { name: 'Karthik Subramanian', email: 'karthik.subramanian@xyzwarehouses.in', role: 'Owner' },
+    { name: 'Lakshmi Prasad', email: 'lakshmi.prasad@xyzwarehouses.in', role: 'Tenant Admin' },
   ],
 };
 
@@ -319,6 +319,9 @@ async function main() {
         data: {
           email: u.email,
           password,
+          name: u.name,
+          role: u.role,
+          status: 'Active',
           companyId: company.id,
         },
       });
