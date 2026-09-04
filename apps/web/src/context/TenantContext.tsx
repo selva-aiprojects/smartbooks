@@ -35,6 +35,16 @@ export interface TenantMetrics {
   aiAlerts: { type: 'warning' | 'info' | 'success'; message: string }[];
 }
 
+export interface TenantEntity {
+  id: string;
+  name: string;
+  displayName: string;
+  entityType: 'entity' | 'parent';
+  parentId?: string;
+  currency: string;
+  metrics?: Partial<TenantMetrics>;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -50,6 +60,7 @@ export interface Tenant {
   subscriptionStatus?: 'Active' | 'Past Due' | 'Trial';
   metrics: TenantMetrics;
   users: TenantUser[];
+  entities?: TenantEntity[];
 }
 
 const INITIAL_TENANTS: Tenant[] = [
@@ -354,6 +365,101 @@ const INITIAL_TENANTS: Tenant[] = [
         { type: 'success', message: '✅ Zomato Payout Reconciled: ₹84,200 payout matched perfectly with Kitchen KDT logs.' }
       ]
     }
+  },
+  {
+    id: 'tenant-xyz-corp',
+    name: 'XYZ Corporation',
+    subdomain: 'xyz-corp',
+    schema: 'tenant_xyz_corp',
+    edition: 'Enterprise Leather Exports Edition',
+    gstin: '33AAACX9876E1Z5',
+    currency: '₹',
+    plan: 'enterprise',
+    seatLimit: 100,
+    billingCycle: 'Annual',
+    nextBillingDate: '2027-03-15',
+    subscriptionStatus: 'Active',
+    entities: [
+      {
+        id: 'entity-xyz-shipment',
+        name: 'XYZ Shipment Ltd',
+        displayName: 'XYZ Shipment Ltd – Export Logistics',
+        entityType: 'entity',
+        parentId: 'tenant-xyz-corp',
+        currency: '₹',
+      },
+      {
+        id: 'entity-xyz-warehouses',
+        name: 'XYZ Warehouses Ltd',
+        displayName: 'XYZ Warehouses Ltd – Storage & Distribution',
+        entityType: 'entity',
+        parentId: 'tenant-xyz-corp',
+        currency: '₹',
+      },
+    ],
+    users: [
+      { id: 'u-xyz-001', name: 'Arjun Kapoor', email: 'arjun.kapoor@xyzcorp.in', role: 'Owner', status: 'Active', createdAt: '2023-01-10', lastLogin: '5 mins ago' },
+      { id: 'u-xyz-002', name: 'Deepa Rajan', email: 'deepa.rajan@xyzcorp.in', role: 'Tenant Admin', status: 'Active', createdAt: '2023-01-12', lastLogin: '30 mins ago' },
+      { id: 'u-xyz-003', name: 'Vikram Iyer', email: 'vikram.iyer@xyzcorp.in', role: 'Finance Manager', status: 'Active', createdAt: '2023-02-01', lastLogin: '2 hours ago' },
+      { id: 'u-xyz-004', name: 'Priya Menon', email: 'priya.menon@xyzcorp.in', role: 'Accountant', status: 'Active', createdAt: '2023-03-15', lastLogin: '1 hour ago' },
+      { id: 'u-xyz-005', name: 'Sanjay Gupta', email: 'sanjay.gupta@xyzcorp.in', role: 'Inventory Manager', status: 'Active', createdAt: '2023-04-10', lastLogin: 'Yesterday' },
+      { id: 'u-xyz-006', name: 'Lakshmi Devi', email: 'lakshmi.devi@xyzcorp.in', role: 'Finance Manager', status: 'Active', createdAt: '2024-01-05', lastLogin: '3 hours ago' },
+    ],
+    metrics: {
+      todaysCollections: 1845000,
+      collectionsGrowth: 28,
+      gstDue: 542000,
+      gstDueDate: '20th Sep 2026',
+      outputGst: 845000,
+      inputTaxCredit: 303000,
+      cashPosition: 42500000,
+      bankAccounts: [
+        { name: 'HDFC Bank – Corporate Forex Account', balance: 18500000, type: 'Checking' },
+        { name: 'ICICI Bank – Export Proceeds Account', balance: 12800000, type: 'Checking' },
+        { name: 'Standard Chartered – Trade Finance', balance: 8200000, type: 'Savings' },
+        { name: 'SBI – GST & Duty Settlement', balance: 2150000, type: 'Checking' },
+        { name: 'XYZ Shipment – Operating Account', balance: 1850000, type: 'Checking' },
+        { name: 'XYZ Warehouses – Storage Collections', balance: 1420000, type: 'Checking' },
+        { name: 'Petty Cash – Head Office', balance: 85000, type: 'Cash' },
+        { name: 'Petty Cash – Warehouse Office', balance: 45000, type: 'Cash' },
+      ],
+      upcomingPayments: 3250000,
+      upcomingPaymentsCount: 12,
+      receivables: 28500000,
+      receivablesAging: [
+        { bracket: '0 - 30 Days', amount: 14200000 },
+        { bracket: '31 - 60 Days', amount: 8500000 },
+        { bracket: '61 - 90 Days', amount: 3800000 },
+        { bracket: '> 90 Days', amount: 2000000 },
+      ],
+      payables: 19200000,
+      payablesAging: [
+        { bracket: '0 - 30 Days', amount: 9800000 },
+        { bracket: '31 - 60 Days', amount: 5400000 },
+        { bracket: '61 - 90 Days', amount: 2800000 },
+        { bracket: '> 90 Days', amount: 1200000 },
+      ],
+      burnRate: 2850000,
+      cashRunwayMonths: 24.8,
+      topCustomers: [
+        { id: '1', name: 'Gucci Leather Sourcing Italy', invoices: 48, revenue: 18500000, status: 'Active' },
+        { id: '2', name: 'BMW Auto Interiors GmbH', invoices: 36, revenue: 14200000, status: 'Active' },
+        { id: '3', name: 'Burberry Supply Chain UK', invoices: 28, revenue: 11800000, status: 'Active' },
+        { id: '4', name: 'Asahi Holdings Japan', invoices: 22, revenue: 9400000, status: 'Active' },
+        { id: '5', name: 'Al Futtaim Group UAE', invoices: 18, revenue: 7600000, status: 'Active' },
+        { id: '6', name: 'Cole Haan USA', invoices: 15, revenue: 6200000, status: 'Active' },
+        { id: '7', name: 'Coach Inc. Global', invoices: 12, revenue: 5100000, status: 'Active' },
+        { id: '8', name: 'Tod\'s Group Italy', invoices: 10, revenue: 4300000, status: 'Active' },
+      ],
+      aiAlerts: [
+        { type: 'warning', message: '🇮🇹 Italy Exposure Alert: 38% of export revenue (₹68.4 Cr) concentrated in Italian buyers. Diversify into APAC to reduce EU regulatory risk.' },
+        { type: 'info', message: '💱 Forex Insight: EUR/INR moved +1.2% this week. Outstanding EUR receivables (€2.4M) gain ₹21.6L. Consider forward contract lock.' },
+        { type: 'success', message: '✅ XYZ Shipment Ltd customs clearance efficiency at 94.2% — 2.1% above Q2 target. 847 shipments processed YTD.' },
+        { type: 'warning', message: '📦 XYZ Warehouses Ltd: Cold storage utilization at 92% capacity. Recommend activating overflow warehouse block B by Oct 2026.' },
+        { type: 'info', message: '📊 YTD Revenue: ₹182.4 Cr (73% export, 27% domestic). On track to exceed FY2026 target of ₹240 Cr by ₹12 Cr.' },
+        { type: 'warning', message: '⚠️ GST Compliance: GSTR-1 filing due in 4 days. Export invoices worth ₹24.8 Cr pending e-way bill generation.' },
+      ],
+    }
   }
 ];
 
@@ -374,45 +480,56 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
-  const [tenants, setTenants] = useState<Tenant[]>(() => {
-    if (typeof window !== 'undefined') {
+  // Initialize to SSR-safe defaults (no window/localStorage) so the server and
+  // first client render match, avoiding React hydration errors. Persisted state
+  // is restored in a useEffect below after hydration completes.
+  const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
+  const [activeTenantId, setActiveTenantId] = useState<string>('tenant-acme');
+  const [isSuperAdmin, setIsSuperAdminState] = useState<boolean>(false);
+
+  useEffect(() => {
+    let restoredTenants = INITIAL_TENANTS;
+    let restoredActive = 'tenant-acme';
+    let restoredSuper = false;
+
+    try {
+      // Tenants merged from INITIAL_TENANTS + saved mutations so newly-added seed
+      // tenants (e.g. XYZ Corporation) always appear, while runtime-added tenants
+      // (via addTenant) and user mutations are preserved.
       const saved = localStorage.getItem('smartbooks_tenants_v2');
       if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.map((t: Tenant) => {
-              const init = INITIAL_TENANTS.find(i => i.id === t.id);
-              return {
-                ...init,
-                ...t,
-                seatLimit: t.seatLimit || init?.seatLimit || 15,
-                plan: t.plan || init?.plan || 'growth',
-                users: t.users || init?.users || []
-              };
-            });
-          }
-        } catch (e) {}
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const savedById = new Map<string, Tenant>(parsed.map((t: Tenant) => [t.id, t]));
+          const merged = INITIAL_TENANTS.map((init) => {
+            const t = savedById.get(init.id);
+            if (!t) return init;
+            return {
+              ...init,
+              ...t,
+              seatLimit: t.seatLimit || init.seatLimit || 15,
+              plan: t.plan || init.plan || 'growth',
+              users: t.users || init.users || [],
+              entities: t.entities || init.entities,
+            };
+          });
+          const initialIds = new Set(INITIAL_TENANTS.map((i) => i.id));
+          const extraSaved = parsed.filter((t: Tenant) => !initialIds.has(t.id));
+          restoredTenants = [...merged, ...extraSaved];
+        }
       }
-    }
-    return INITIAL_TENANTS;
-  });
 
-  const [activeTenantId, setActiveTenantId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('smartbooks_active_tenant_id');
-      if (saved) return saved;
-    }
-    return 'tenant-acme';
-  });
+      const savedActive = localStorage.getItem('smartbooks_active_tenant_id');
+      if (savedActive) restoredActive = savedActive;
 
-  const [isSuperAdmin, setIsSuperAdminState] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('smartbooks_is_superadmin');
-      if (saved !== null) return saved === 'true';
-    }
-    return false; // Default: Strict Tenant Isolation (Regular User Mode)
-  });
+      const savedSuper = localStorage.getItem('smartbooks_is_superadmin');
+      if (savedSuper !== null) restoredSuper = savedSuper === 'true';
+    } catch (e) { /* ignore */ }
+
+    setTenants(restoredTenants);
+    setActiveTenantId(restoredActive);
+    setIsSuperAdminState(restoredSuper);
+  }, []);
 
   const setIsSuperAdmin = (val: boolean) => {
     setIsSuperAdminState(val);

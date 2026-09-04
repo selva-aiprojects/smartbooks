@@ -62,7 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email.toLowerCase() === 'admin@smartbooks.ai' ||
       email.toLowerCase() === 'admin@smartbooks.com';
 
-    if (email.toLowerCase().includes('nexusretail.com') || email.toLowerCase().includes('nexus')) {
+    if (email.toLowerCase().includes('xyzcorp.in') || email.toLowerCase().includes('xyz')) {
+      tenantId = 'tenant-xyz-corp';
+      companyName = 'XYZ Corporation';
+    } else if (email.toLowerCase().includes('nexusretail.com') || email.toLowerCase().includes('nexus')) {
       tenantId = 'tenant-nexus';
       companyName = 'Nexus Retail & Supermarkets';
     } else if (email.toLowerCase().includes('vanguardmfg.com')) {

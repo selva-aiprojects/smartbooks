@@ -10,7 +10,8 @@
     "build:web": "prisma generate && next build apps/web",
     "vercel-build": "prisma generate && next build apps/web",
     "db:push": "prisma db push",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:xyz": "ts-node prisma/seed-xyz.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
