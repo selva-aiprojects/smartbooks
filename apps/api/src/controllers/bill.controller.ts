@@ -47,7 +47,7 @@ export async function fetchBills(req: AuthRequest, res: Response) {
 
 export async function addBill(req: AuthRequest, res: Response) {
   try {
-    const { vendorId, number, billDate, dueDate, items } = req.body;
+    const { vendorId, number, billDate, dueDate, items, isInterState } = req.body;
     const bill = await createBill({
       companyId: req.user.companyId,
       createdById: req.user.userId,
@@ -55,6 +55,7 @@ export async function addBill(req: AuthRequest, res: Response) {
       number,
       billDate,
       dueDate,
+      isInterState,
       items
     });
     res.status(201).json(bill);

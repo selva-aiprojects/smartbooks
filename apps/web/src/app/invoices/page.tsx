@@ -37,17 +37,29 @@ const columns: GridColDef[] = [
     }
   },
   { 
+    field: 'taxableAmount', 
+    headerName: 'Taxable (₹)', 
+    width: 130, 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
+  },
+  { 
+    field: 'gstAmount', 
+    headerName: 'GST (₹)', 
+    width: 120, 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
+  },
+  { 
     field: 'totalAmount', 
-    headerName: 'Total Amount (₹)', 
-    width: 150, 
+    headerName: 'Total (₹)', 
+    width: 130,
     valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },
 ];
 
 const mockInvoices = [
-  { id: '1', number: 'INV-2026-001', customerName: 'Acme Global Tech', issueDate: '2026-08-01', dueDate: '2026-08-15', status: 'Sent', totalAmount: 4500 },
-  { id: '2', number: 'INV-2026-002', customerName: 'Nexus Digital Solutions', issueDate: '2026-07-15', dueDate: '2026-07-30', status: 'Paid', totalAmount: 4000 },
-  { id: '3', number: 'INV-2026-003', customerName: 'Vanguard Retail Inc', issueDate: '2026-06-01', dueDate: '2026-06-15', status: 'Overdue', totalAmount: 2800 },
+  { id: '1', number: 'INV-2026-001', customerName: 'Acme Global Tech', issueDate: '2026-08-01', dueDate: '2026-08-15', status: 'Sent', taxableAmount: 3813.56, gstAmount: 686.44, totalAmount: 4500 },
+  { id: '2', number: 'INV-2026-002', customerName: 'Nexus Digital Solutions', issueDate: '2026-07-15', dueDate: '2026-07-30', status: 'Paid', taxableAmount: 3389.83, gstAmount: 610.17, totalAmount: 4000 },
+  { id: '3', number: 'INV-2026-003', customerName: 'Vanguard Retail Inc', issueDate: '2026-06-01', dueDate: '2026-06-15', status: 'Overdue', taxableAmount: 2372.88, gstAmount: 427.12, totalAmount: 2800 },
 ];
 
 export default function InvoicesPage() {
@@ -71,6 +83,8 @@ export default function InvoicesPage() {
               issueDate: item.issueDate ? new Date(item.issueDate).toISOString().split('T')[0] : '',
               dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
               status: item.status,
+              taxableAmount: item.taxableAmount,
+              gstAmount: item.gstAmount,
               totalAmount: item.totalAmount,
             })));
           }

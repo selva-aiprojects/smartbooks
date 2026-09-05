@@ -47,7 +47,7 @@ export async function fetchInvoices(req: AuthRequest, res: Response) {
 
 export async function addInvoice(req: AuthRequest, res: Response) {
   try {
-    const { customerId, number, issueDate, dueDate, items } = req.body;
+    const { customerId, number, issueDate, dueDate, items, isInterState } = req.body;
     const invoice = await createInvoice({
       companyId: req.user.companyId,
       createdById: req.user.userId,
@@ -55,6 +55,7 @@ export async function addInvoice(req: AuthRequest, res: Response) {
       number,
       issueDate,
       dueDate,
+      isInterState,
       items
     });
     res.status(201).json(invoice);

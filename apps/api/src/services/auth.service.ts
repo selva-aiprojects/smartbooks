@@ -33,7 +33,9 @@ export async function registerUser(
     const defaultAccounts = [
       { name: 'Cash on Hand', code: '1010', type: 'Asset' },
       { name: 'Accounts Receivable', code: '1020', type: 'Asset' },
+      { name: 'ITC / Input GST', code: '1025', type: 'Asset' },
       { name: 'Accounts Payable', code: '2010', type: 'Liability' },
+      { name: 'Output GST Payable', code: '2015', type: 'Liability' },
       { name: 'Owner Equity', code: '3010', type: 'Equity' },
       { name: 'Sales Revenue', code: '4010', type: 'Revenue' },
       { name: 'General Expense', code: '5010', type: 'Expense' }
@@ -48,6 +50,40 @@ export async function registerUser(
           type: acc.type,
           balance: 0
         }
+      });
+    }
+
+    const defaultTaxRates = [
+      { name: 'GST Zero', rate: 0 },
+      { name: 'GST 5%', rate: 5 },
+      { name: 'GST 12%', rate: 12 },
+      { name: 'GST 18%', rate: 18 },
+      { name: 'GST 28%', rate: 28 }
+    ];
+
+    for (const taxRate of defaultTaxRates) {
+      await tx.taxRate.create({
+        data: {
+          companyId: company.id,
+          name: taxRate.name,
+          rate: taxRate.rate
+        }
+      });
+    }
+
+    const defaultItems = [
+      { name: 'Laptop (Core i7)', sku: 'ITM-1001', category: 'Hardware', hsnCode: '84713000', unit: 'Nos', rate: 65000, gstRate: 18, stock: 25, location: 'Main Store' },
+      { name: 'Desktop Computer', sku: 'ITM-1002', category: 'Hardware', hsnCode: '84715000', unit: 'Nos', rate: 32000, gstRate: 18, stock: 12, location: 'Main Store' },
+      { name: 'Wireless Mouse', sku: 'ITM-1003', category: 'Accessories', hsnCode: '84716000', unit: 'Nos', rate: 850, gstRate: 18, stock: 150, location: 'Annex Store' },
+      { name: 'US Keyboard', sku: 'ITM-1004', category: 'Accessories', hsnCode: '84716000', unit: 'Nos', rate: 950, gstRate: 18, stock: 80, location: 'Annex Store' },
+      { name: 'A4 Copy Paper (500 Sheets)', sku: 'ITM-1005', category: 'Consumables', hsnCode: '48025600', unit: 'Ream', rate: 280, gstRate: 5, stock: 400, location: 'Stationery Store' },
+      { name: 'Business Accounting Services', sku: 'SRV-2001', category: 'Software & Licensing', hsnCode: '998313', unit: 'Month', rate: 15000, gstRate: 18, stock: 0, location: 'Services' },
+      { name: 'Cloud Infrastructure Subscription', sku: 'SRV-2002', category: 'Software & Licensing', hsnCode: '998311', unit: 'Month', rate: 1800, gstRate: 18, stock: 0, location: 'Services' }
+    ];
+
+    for (const item of defaultItems) {
+      await tx.item.create({
+        data: { ...item, companyId: company.id }
       });
     }
 

@@ -26,14 +26,24 @@ export async function createInvoice(data: {
   number: string;
   issueDate: Date | string;
   dueDate: Date | string;
-  items: Array<{ description: string; quantity: number; unitPrice: number }>;
+  isInterState?: boolean;
+  items: Array<{ description: string; quantity: number; unitPrice: number; hsnCode?: string | null; gstRate?: number }>;
 }) {
-  const { companyId, createdById, customerId, items, ...rest } = data;
+  const { companyId, createdById, customerId, items, isInterState, ...rest } = data;
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('An invoice must have at least one line item');
   }
-  const totalAmount = items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
+  const lineTotals = items.map((i) => {
+    const taxable = (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0);
+    const gstRate = Number(i.gstRate) || 0;
+    const gst = taxable * (gstRate / 100);
+    return { taxable, gstRate, gst };
+  });
+  const taxableAmount = lineTotals.reduce((sum, l) => sum + l.taxable, 0);
+  const gstAmount = lineTotals.reduce((sum, l) => sum + l.gst, 0);
+  const totalAmount = taxableAmount + gstAmount;
+  const effectiveGstRate = taxableAmount > 0 ? Math.round((gstAmount / taxableAmount) * 10000) / 100 : 0;
 
   return await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.findFirst({ where: { id: customerId, companyId } });
@@ -49,13 +59,20 @@ export async function createInvoice(data: {
         issueDate: new Date(data.issueDate),
         dueDate: new Date(data.dueDate),
         status: 'Sent',
+        taxableAmount,
+        gstAmount,
+        gstRate: effectiveGstRate,
+        isInterState: !!isInterState,
         totalAmount,
         items: {
-          create: items.map(i => ({
+          create: items.map((i, idx) => ({
             description: i.description,
+            hsnCode: i.hsnCode || null,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
-            amount: (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0)
+            amount: lineTotals[idx].taxable,
+            gstRate: lineTotals[idx].gstRate,
+            gstAmount: lineTotals[idx].gst
           }))
         }
       },
@@ -65,7 +82,16 @@ export async function createInvoice(data: {
       }
     });
 
-    await postInvoiceJournal(tx, invoice.companyId, data.createdById, invoice.number, Number(invoice.totalAmount), customer.name);
+    await postInvoiceJournal(
+      tx,
+      invoice.companyId,
+      data.createdById,
+      invoice.number,
+      Number(invoice.taxableAmount),
+      Number(invoice.gstAmount),
+      customer.name,
+      invoice.isInterState
+    );
 
     return invoice;
   });
@@ -76,14 +102,40 @@ async function postInvoiceJournal(
   companyId: string,
   createdById: string,
   invoiceNumber: string,
-  totalAmount: number,
-  customerName: string
+  taxableAmount: number,
+  gstAmount: number,
+  customerName: string,
+  isInterState: boolean
 ) {
   const arAcc = await tx.account.findFirst({ where: { companyId, code: '1020' } });
   const revAcc = await tx.account.findFirst({ where: { companyId, code: '4010' } });
 
   if (!arAcc || !revAcc) {
     throw new Error(`Required GL accounts (1020 A/R, 4010 Revenue) missing for company ${companyId}`);
+  }
+
+  const lines: any[] = [
+    { accountId: arAcc.id, amount: taxableAmount + gstAmount, type: 'debit', description: `Accounts receivable from ${customerName}` },
+    { accountId: revAcc.id, amount: taxableAmount, type: 'credit', description: `Sales revenue from Invoice #${invoiceNumber}` }
+  ];
+
+  if (gstAmount > 0) {
+    const gstAcc = await tx.account.findFirst({ where: { companyId, code: '2015' } });
+    const outputGstAcc = gstAcc || (await tx.account.create({
+      data: {
+        companyId,
+        name: isInterState ? 'IGST Payable' : 'CGST & SGST Payable',
+        code: '2015',
+        type: 'Liability',
+        balance: 0
+      }
+    }));
+    lines.push({
+      accountId: outputGstAcc.id,
+      amount: gstAmount,
+      type: 'credit',
+      description: `${isInterState ? 'IGST' : 'CGST/SGST'} output tax on Invoice #${invoiceNumber}`
+    });
   }
 
   await tx.journalEntry.create({
@@ -93,12 +145,7 @@ async function postInvoiceJournal(
       description: `Invoice #${invoiceNumber} issued`,
       status: 'Posted',
       createdById,
-      lines: {
-        create: [
-          { accountId: arAcc.id, amount: totalAmount, type: 'debit', description: `Accounts receivable from ${customerName}` },
-          { accountId: revAcc.id, amount: totalAmount, type: 'credit', description: `Sales revenue from Invoice #${invoiceNumber}` }
-        ]
-      }
+      lines: { create: lines }
     }
   });
 }

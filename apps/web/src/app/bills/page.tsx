@@ -36,17 +36,29 @@ const columns: GridColDef[] = [
     }
   },
   { 
+    field: 'taxableAmount', 
+    headerName: 'Taxable (₹)', 
+    width: 130, 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
+  },
+  { 
+    field: 'gstAmount', 
+    headerName: 'ITC (₹)', 
+    width: 120, 
+    valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
+  },
+  { 
     field: 'totalAmount', 
-    headerName: 'Total Amount (₹)', 
-    width: 150, 
+    headerName: 'Total (₹)', 
+    width: 130,
     valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },
 ];
 
 const mockBills = [
-  { id: '1', number: 'BILL-8801', vendorName: 'AWS Cloud Services', billDate: '2026-08-01', dueDate: '2026-08-15', status: 'Unpaid', totalAmount: 1800 },
-  { id: '2', number: 'BILL-8802', vendorName: 'City Office Supplies Co', billDate: '2026-07-20', dueDate: '2026-08-04', status: 'Paid', totalAmount: 1200 },
-  { id: '3', number: 'BILL-8803', vendorName: 'Metropolitan Real Estate', billDate: '2026-07-01', dueDate: '2026-07-15', status: 'Paid', totalAmount: 3500 },
+  { id: '1', number: 'BILL-8801', vendorName: 'AWS Cloud Services', billDate: '2026-08-01', dueDate: '2026-08-15', status: 'Unpaid', taxableAmount: 1525.42, gstAmount: 274.58, totalAmount: 1800 },
+  { id: '2', number: 'BILL-8802', vendorName: 'City Office Supplies Co', billDate: '2026-07-20', dueDate: '2026-08-04', status: 'Paid', taxableAmount: 1016.95, gstAmount: 183.05, totalAmount: 1200 },
+  { id: '3', number: 'BILL-8803', vendorName: 'Metropolitan Real Estate', billDate: '2026-07-01', dueDate: '2026-07-15', status: 'Paid', taxableAmount: 2966.1, gstAmount: 533.9, totalAmount: 3500 },
 ];
 
 export default function BillsPage() {
@@ -70,6 +82,8 @@ export default function BillsPage() {
               billDate: item.billDate ? new Date(item.billDate).toISOString().split('T')[0] : '',
               dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
               status: item.status,
+              taxableAmount: item.taxableAmount,
+              gstAmount: item.gstAmount,
               totalAmount: item.totalAmount,
             })));
           }

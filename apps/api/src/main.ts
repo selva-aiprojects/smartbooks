@@ -8,6 +8,8 @@ import aiRoutes from './routes/ai.routes';
 import accountRoutes from './routes/account.routes';
 import adminRoutes from './routes/admin.routes';
 import meRoutes from './routes/me.routes';
+import itemRoutes from './routes/item.routes';
+import taxRoutes from './routes/tax.routes';
 import { prisma } from './lib/prisma';
 import cors from 'cors';
 import { config } from './core/config';
@@ -42,6 +44,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/me', meRoutes);
+app.use('/api/items', itemRoutes);
+app.use('/api/tax', taxRoutes);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });

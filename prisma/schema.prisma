@@ -38,6 +38,8 @@ model Company {
   vendors           Vendor[]
   bills             Bill[]
   bankTransactions  BankTransaction[]
+  taxRates          TaxRate[]
+  items             Item[]
 }
 
 model User {
@@ -81,6 +83,39 @@ model Account {
   entries   JournalLine[]
 
   @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model TaxRate {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  rate      Decimal  @db.Decimal(5, 2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+model Item {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  sku       String
+  category  String?
+  hsnCode   String?
+  unit      String   @default("Nos")
+  rate      Decimal  @default(0) @db.Decimal(19, 2)
+  gstRate   Decimal  @default(0) @db.Decimal(5, 2)
+  stock     Decimal  @default(0) @db.Decimal(19, 2)
+  location  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, sku])
   @@index([companyId])
 }
 
@@ -128,19 +163,23 @@ model Customer {
 }
 
 model Invoice {
-  id          String        @id @default(uuid())
-  companyId   String
-  company     Company       @relation(fields: [companyId], references: [id])
-  customerId  String
-  customer    Customer      @relation(fields: [customerId], references: [id])
-  number      String
-  issueDate   DateTime
-  dueDate     DateTime
-  status      String        @default("Draft")
-  totalAmount Decimal       @default(0) @db.Decimal(19,2)
-  items       InvoiceItem[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  companyId     String
+  company       Company       @relation(fields: [companyId], references: [id])
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  number        String
+  issueDate     DateTime
+  dueDate       DateTime
+  status        String        @default("Draft")
+  taxableAmount Decimal       @default(0) @db.Decimal(19, 2)
+  gstRate       Decimal       @default(0) @db.Decimal(5, 2)
+  gstAmount     Decimal       @default(0) @db.Decimal(19, 2)
+  isInterState  Boolean       @default(false)
+  totalAmount   Decimal       @default(0) @db.Decimal(19, 2)
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([companyId])
   @@index([companyId, status])
@@ -151,9 +190,12 @@ model InvoiceItem {
   invoiceId   String
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   description String
+  hsnCode     String?
   quantity    Int      @default(1)
-  unitPrice   Decimal  @default(0) @db.Decimal(19,2)
-  amount      Decimal  @default(0) @db.Decimal(19,2)
+  unitPrice   Decimal  @default(0) @db.Decimal(19, 2)
+  amount      Decimal  @default(0) @db.Decimal(19, 2)
+  gstRate     Decimal  @default(0) @db.Decimal(5, 2)
+  gstAmount   Decimal  @default(0) @db.Decimal(19, 2)
 }
 
 model Vendor {
@@ -172,33 +214,40 @@ model Vendor {
 }
 
 model Bill {
-  id          String     @id @default(uuid())
-  companyId   String
-  company     Company    @relation(fields: [companyId], references: [id])
-  vendorId    String
-  vendor      Vendor     @relation(fields: [vendorId], references: [id])
-  number      String
-  billDate    DateTime
-  dueDate     DateTime
-  status      String     @default("Unpaid")
-  totalAmount Decimal    @default(0) @db.Decimal(19,2)
-  items       BillItem[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String     @id @default(uuid())
+  companyId      String
+  company        Company    @relation(fields: [companyId], references: [id])
+  vendorId       String
+  vendor         Vendor     @relation(fields: [vendorId], references: [id])
+  number         String
+  billDate       DateTime
+  dueDate        DateTime
+  status         String     @default("Unpaid")
+  taxableAmount  Decimal    @default(0) @db.Decimal(19, 2)
+  gstRate        Decimal    @default(0) @db.Decimal(5, 2)
+  gstAmount      Decimal    @default(0) @db.Decimal(19, 2)
+  isInterState   Boolean    @default(false)
+  totalAmount    Decimal    @default(0) @db.Decimal(19, 2)
+  items          BillItem[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   @@index([companyId])
   @@index([companyId, status])
 }
 
 model BillItem {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   billId      String
-  bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
+  bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
   description String
-  quantity    Int     @default(1)
-  unitPrice   Decimal @default(0) @db.Decimal(19,2)
-  amount      Decimal @default(0) @db.Decimal(19,2)
-  category    String  @default("Expense")
+  hsnCode     String?
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @default(0) @db.Decimal(19, 2)
+  amount      Decimal  @default(0) @db.Decimal(19, 2)
+  category    String   @default("Expense")
+  gstRate     Decimal  @default(0) @db.Decimal(5, 2)
+  gstAmount   Decimal  @default(0) @db.Decimal(19, 2)
 }
 
 model BankTransaction {

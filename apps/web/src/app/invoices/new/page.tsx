@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthHeaders } from '../../../lib/api';
 import { 
@@ -14,59 +14,107 @@ import {
   Select, 
   MenuItem, 
   IconButton,
-  Divider
+  Divider,
+  Checkbox,
+  FormControlLabel,
+  CircularProgress
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, ArrowBack } from '@mui/icons-material';
 import Link from 'next/link';
 
+interface Customer { id: string; name: string; }
+interface InvoiceLineItem { description: string; quantity: number; unitPrice: number; gstRate: number; hsnCode: string; }
+
+const gstRates = [0, 5, 12, 18, 28];
+
 export default function NewInvoicePage() {
   const router = useRouter();
-  const [customer, setCustomer] = useState('Acme Global Tech');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerId, setCustomerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-2026-${Math.floor(100 + Math.random() * 900)}`);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]);
-  
-  const [items, setItems] = useState([
-    { description: 'Enterprise Accounting Services', quantity: 1, unitPrice: 3500 },
-    { description: 'Tax Advisory Setup', quantity: 1, unitPrice: 1000 }
+  const [isInterState, setIsInterState] = useState(false);
+  const [loadingEntities, setLoadingEntities] = useState(true);
+
+  const [items, setItems] = useState<InvoiceLineItem[]>([
+    { description: 'Enterprise Accounting Services', quantity: 1, unitPrice: 3500, gstRate: 18, hsnCode: '998313' },
   ]);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/invoices/customers', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCustomers(data);
+            setCustomerId(data[0].id);
+          }
+        }
+      } catch (e) { /* fall back to manual entry */ }
+      setLoadingEntities(false);
+    }
+    load();
+  }, []);
+
   const handleAddItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0 }]);
+    setItems([...items, { description: '', quantity: 1, unitPrice: 0, gstRate: 18, hsnCode: '' }]);
   };
 
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const taxable = items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+  const gst = items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0) * ((item.gstRate || 0) / 100), 0);
+  const totalAmount = taxable + gst;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerId) {
+      alert('Please select a customer. Add a customer first from the Invoices page if the list is empty.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await fetch('/api/invoices', {
+      const res = await fetch('/api/invoices', {
         method: 'POST',
         headers: getAuthHeaders(true),
         body: JSON.stringify({
-          customerId: '1',
+          customerId,
           number: invoiceNumber,
           issueDate,
           dueDate,
-          items
+          isInterState,
+          items: items.map(i => ({
+            description: i.description,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            gstRate: i.gstRate,
+            hsnCode: i.hsnCode
+          }))
         })
       });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to create invoice');
+        setSubmitting(false);
+        return;
+      }
+      router.push('/invoices');
     } catch (err) {
       console.error(err);
-    } finally {
+      alert('Backend unreachable. Invoice not created.');
       setSubmitting(false);
-      router.push('/invoices');
     }
   };
 
+  const fmt = (n: number) => `₹${(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto' }}>
+    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
       <Box sx={{ mb: 3 }}>
         <Button component={Link} href="/invoices" startIcon={<ArrowBack />}>
           Back to Invoices
@@ -80,41 +128,53 @@ export default function NewInvoicePage() {
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-            <FormControl fullWidth>
+            <FormControl fullWidth required>
               <InputLabel>Customer</InputLabel>
-              <Select value={customer} label="Customer" onChange={(e) => setCustomer(e.target.value)}>
-                <MenuItem value="Acme Global Tech">Acme Global Tech</MenuItem>
-                <MenuItem value="Nexus Digital Solutions">Nexus Digital Solutions</MenuItem>
-                <MenuItem value="Vanguard Retail Inc">Vanguard Retail Inc</MenuItem>
+              <Select
+                value={customerId}
+                label="Customer"
+                onChange={(e) => setCustomerId(e.target.value)}
+                disabled={loadingEntities}
+              >
+                {loadingEntities && <MenuItem value=""><em>Loading...</em></MenuItem>}
+                {customers.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
               </Select>
             </FormControl>
 
-            <TextField 
-              label="Invoice Number" 
-              value={invoiceNumber} 
-              onChange={(e) => setInvoiceNumber(e.target.value)} 
-              fullWidth 
-              required 
+            <TextField
+              label="Invoice Number"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              fullWidth
+              required
             />
 
-            <TextField 
-              label="Issue Date" 
-              type="date" 
-              value={issueDate} 
-              onChange={(e) => setIssueDate(e.target.value)} 
-              slotProps={{ inputLabel: { shrink: true } }} 
-              fullWidth 
-              required 
+            <TextField
+              label="Issue Date"
+              type="date"
+              value={issueDate}
+              onChange={(e) => setIssueDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+              required
             />
 
-            <TextField 
-              label="Due Date" 
-              type="date" 
-              value={dueDate} 
-              onChange={(e) => setDueDate(e.target.value)} 
-              slotProps={{ inputLabel: { shrink: true } }} 
-              fullWidth 
-              required 
+            <TextField
+              label="Due Date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+              fullWidth
+              required
+            />
+
+            <FormControlLabel
+              control={<Checkbox checked={isInterState} onChange={(e) => setIsInterState(e.target.checked)} />}
+              label="Inter-State supply (IGST applies; GST splits into CGST/SGST otherwise)"
+              sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}
             />
           </Box>
 
@@ -125,40 +185,68 @@ export default function NewInvoicePage() {
           </Typography>
 
           {items.map((item, index) => (
-            <Box key={index} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 1fr 1.5fr auto' }, gap: 2, alignItems: 'center' }}>
-              <TextField 
-                label="Description" 
-                value={item.description} 
+            <Box key={index} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 0.7fr 1.4fr 0.75fr 1fr auto' }, gap: 2, alignItems: 'center' }}>
+              <TextField
+                label="Description"
+                value={item.description}
                 onChange={(e) => {
                   const copy = [...items];
                   copy[index].description = e.target.value;
                   setItems(copy);
-                }} 
-                required 
+                }}
+                required
               />
 
-              <TextField 
-                label="Qty" 
-                type="number" 
-                value={item.quantity} 
+              <TextField
+                label="Qty"
+                type="number"
+                value={item.quantity}
                 onChange={(e) => {
                   const copy = [...items];
                   copy[index].quantity = parseInt(e.target.value) || 1;
                   setItems(copy);
-                }} 
-                required 
+                }}
+                required
               />
 
-              <TextField 
-                label="Price (₹)" 
-                type="number" 
-                value={item.unitPrice} 
+              <TextField
+                label="Price (₹)"
+                type="number"
+                value={item.unitPrice}
                 onChange={(e) => {
                   const copy = [...items];
                   copy[index].unitPrice = parseFloat(e.target.value) || 0;
                   setItems(copy);
-                }} 
-                required 
+                }}
+                required
+              />
+
+              <FormControl fullWidth>
+                <InputLabel>GST %</InputLabel>
+                <Select
+                  value={item.gstRate}
+                  label="GST %"
+                  onChange={(e) => {
+                    const copy = [...items];
+                    copy[index].gstRate = Number(e.target.value);
+                    setItems(copy);
+                  }}
+                >
+                  {gstRates.map((g) => (
+                    <MenuItem key={g} value={g}>{g}%</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="HSN"
+                value={item.hsnCode}
+                onChange={(e) => {
+                  const copy = [...items];
+                  copy[index].hsnCode = e.target.value;
+                  setItems(copy);
+                }}
+                placeholder="e.g. 998313"
               />
 
               <IconButton color="error" onClick={() => handleRemoveItem(index)} disabled={items.length === 1}>
@@ -173,17 +261,29 @@ export default function NewInvoicePage() {
 
           <Divider sx={{ my: 1 }} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h5" fontWeight="bold">
-              Total Amount: ₹{totalAmount.toLocaleString('en-IN')}
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary">Taxable Value: {fmt(taxable)}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                GST ({isInterState ? 'IGST' : 'CGST + SGST'}): {fmt(gst)}
+              </Typography>
+              <Typography variant="h5" fontWeight="bold">
+                Total Amount: {fmt(totalAmount)}
+              </Typography>
+            </Box>
 
-            <Button type="submit" variant="contained" size="large" disabled={submitting}>
+            <Button type="submit" variant="contained" size="large" disabled={submitting || loadingEntities}>
               {submitting ? 'Creating...' : 'Create & Send Invoice'}
             </Button>
           </Box>
         </Box>
       </Paper>
+
+      {!loadingEntities && customers.length === 0 && (
+        <Paper sx={{ p: 2, mt: 2, borderRadius: 2, bgcolor: '#fff7ed', color: '#9a3412' }}>
+          No customers found for this account yet. Add a customer from the Invoices page before creating an invoice.
+        </Paper>
+      )}
     </Box>
   );
 }

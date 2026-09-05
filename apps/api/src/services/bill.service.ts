@@ -26,14 +26,24 @@ export async function createBill(data: {
   number: string;
   billDate: Date | string;
   dueDate: Date | string;
-  items: Array<{ description: string; quantity: number; unitPrice: number; category?: string }>;
+  isInterState?: boolean;
+  items: Array<{ description: string; quantity: number; unitPrice: number; category?: string; hsnCode?: string | null; gstRate?: number }>;
 }) {
-  const { companyId, createdById, vendorId, items, ...rest } = data;
+  const { companyId, createdById, vendorId, items, isInterState, ...rest } = data;
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('A bill must have at least one line item');
   }
-  const totalAmount = items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
+  const lineTotals = items.map((i) => {
+    const taxable = (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0);
+    const gstRate = Number(i.gstRate) || 0;
+    const gst = taxable * (gstRate / 100);
+    return { taxable, gstRate, gst };
+  });
+  const taxableAmount = lineTotals.reduce((sum, l) => sum + l.taxable, 0);
+  const gstAmount = lineTotals.reduce((sum, l) => sum + l.gst, 0);
+  const totalAmount = taxableAmount + gstAmount;
+  const effectiveGstRate = taxableAmount > 0 ? Math.round((gstAmount / taxableAmount) * 10000) / 100 : 0;
 
   return await prisma.$transaction(async (tx) => {
     const vendor = await tx.vendor.findFirst({ where: { id: vendorId, companyId } });
@@ -49,14 +59,21 @@ export async function createBill(data: {
         billDate: new Date(data.billDate),
         dueDate: new Date(data.dueDate),
         status: 'Unpaid',
+        taxableAmount,
+        gstAmount,
+        gstRate: effectiveGstRate,
+        isInterState: !!isInterState,
         totalAmount,
         items: {
-          create: items.map(i => ({
+          create: items.map((i, idx) => ({
             description: i.description,
+            hsnCode: i.hsnCode || null,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
-            amount: (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0),
-            category: i.category || 'Expense'
+            amount: lineTotals[idx].taxable,
+            category: i.category || 'Expense',
+            gstRate: lineTotals[idx].gstRate,
+            gstAmount: lineTotals[idx].gst
           }))
         }
       },
@@ -66,7 +83,16 @@ export async function createBill(data: {
       }
     });
 
-    await postBillJournal(tx, bill.companyId, data.createdById, bill.number, Number(bill.totalAmount), vendor.name);
+    await postBillJournal(
+      tx,
+      bill.companyId,
+      data.createdById,
+      bill.number,
+      Number(bill.taxableAmount),
+      Number(bill.gstAmount),
+      vendor.name,
+      bill.isInterState
+    );
 
     return bill;
   });
@@ -77,14 +103,40 @@ async function postBillJournal(
   companyId: string,
   createdById: string,
   billNumber: string,
-  totalAmount: number,
-  vendorName: string
+  taxableAmount: number,
+  gstAmount: number,
+  vendorName: string,
+  isInterState: boolean
 ) {
   const expAcc = await tx.account.findFirst({ where: { companyId, code: '5010' } });
   const apAcc = await tx.account.findFirst({ where: { companyId, code: '2010' } });
 
   if (!expAcc || !apAcc) {
     throw new Error(`Required GL accounts (5010 Expense, 2010 A/P) missing for company ${companyId}`);
+  }
+
+  const lines: any[] = [
+    { accountId: expAcc.id, amount: taxableAmount, type: 'debit', description: `Expense from ${vendorName}` },
+    { accountId: apAcc.id, amount: taxableAmount + gstAmount, type: 'credit', description: `Accounts payable to ${vendorName} for Bill #${billNumber}` }
+  ];
+
+  if (gstAmount > 0) {
+    const itcAcc = await tx.account.findFirst({ where: { companyId, code: '1025' } });
+    const inputGstAcc = itcAcc || (await tx.account.create({
+      data: {
+        companyId,
+        name: isInterState ? 'IGST Input Credit' : 'CGST & SGST Input Credit',
+        code: '1025',
+        type: 'Asset',
+        balance: 0
+      }
+    }));
+    lines.push({
+      accountId: inputGstAcc.id,
+      amount: gstAmount,
+      type: 'debit',
+      description: `${isInterState ? 'IGST' : 'CGST/SGST'} input tax credit on Bill #${billNumber}`
+    });
   }
 
   await tx.journalEntry.create({
@@ -94,12 +146,7 @@ async function postBillJournal(
       description: `Bill #${billNumber} recorded`,
       status: 'Posted',
       createdById,
-      lines: {
-        create: [
-          { accountId: expAcc.id, amount: totalAmount, type: 'debit', description: `Expense from ${vendorName}` },
-          { accountId: apAcc.id, amount: totalAmount, type: 'credit', description: `Accounts payable to ${vendorName} for Bill #${billNumber}` }
-        ]
-      }
+      lines: { create: lines }
     }
   });
 }
