@@ -4,7 +4,8 @@ import {
   addCustomer, 
   fetchInvoices, 
   addInvoice, 
-  markInvoiceStatus 
+  markInvoiceStatus,
+  addPayment 
 } from '../controllers/invoice.controller';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -18,5 +19,6 @@ router.post('/customers', addCustomer);
 router.get('/', fetchInvoices);
 router.post('/', addInvoice);
 router.patch('/:id/status', markInvoiceStatus);
+router.post('/:id/payments', addPayment);
 
 export default router;

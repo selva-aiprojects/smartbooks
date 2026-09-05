@@ -58,6 +58,7 @@ model User {
   updatedAt          DateTime       @updatedAt
   roles              Role[]
   journalEntries     JournalEntry[]
+  invoicePayments    InvoicePayment[]
 
   @@index([companyId])
 }
@@ -112,6 +113,8 @@ model Item {
   stock     Decimal  @default(0) @db.Decimal(19, 2)
   location  String?
   active    Boolean  @default(true)
+  tracksInventory Boolean @default(true)
+  invoiceItems InvoiceItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -178,6 +181,7 @@ model Invoice {
   isInterState  Boolean       @default(false)
   totalAmount   Decimal       @default(0) @db.Decimal(19, 2)
   items         InvoiceItem[]
+  payments      InvoicePayment[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -185,10 +189,27 @@ model Invoice {
   @@index([companyId, status])
 }
 
+model InvoicePayment {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount      Decimal  @default(0) @db.Decimal(19, 2)
+  date        DateTime
+  method      String   @default("Cash")
+  reference   String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
 model InvoiceItem {
   id          String   @id @default(uuid())
   invoiceId   String
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemId      String?
+  item        Item?    @relation(fields: [itemId], references: [id])
   description String
   hsnCode     String?
   quantity    Int      @default(1)
@@ -196,6 +217,8 @@ model InvoiceItem {
   amount      Decimal  @default(0) @db.Decimal(19, 2)
   gstRate     Decimal  @default(0) @db.Decimal(5, 2)
   gstAmount   Decimal  @default(0) @db.Decimal(19, 2)
+
+  @@index([itemId])
 }
 
 model Vendor {

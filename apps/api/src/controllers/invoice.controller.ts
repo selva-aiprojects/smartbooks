@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
-import { 
-  getCustomers, 
-  createCustomer, 
-  getInvoices, 
-  createInvoice, 
-  updateInvoiceStatus 
+import {
+  getCustomers,
+  createCustomer,
+  getInvoices,
+  createInvoice,
+  updateInvoiceStatus,
+  recordInvoicePayment,
 } from '../services/invoice.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 
@@ -70,6 +71,17 @@ export async function markInvoiceStatus(req: AuthRequest, res: Response) {
     const { status } = req.body;
     const invoice = await updateInvoiceStatus(id, status, req.user.companyId, req.user.userId);
     res.json(invoice);
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+}
+
+export async function addPayment(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { amount, date, method, reference } = req.body;
+    const result = await recordInvoicePayment(id, { amount, date, method, reference }, req.user.companyId, req.user.userId);
+    res.status(201).json(result);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }

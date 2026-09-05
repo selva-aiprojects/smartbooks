@@ -77,8 +77,8 @@ export async function registerUser(
       { name: 'Wireless Mouse', sku: 'ITM-1003', category: 'Accessories', hsnCode: '84716000', unit: 'Nos', rate: 850, gstRate: 18, stock: 150, location: 'Annex Store' },
       { name: 'US Keyboard', sku: 'ITM-1004', category: 'Accessories', hsnCode: '84716000', unit: 'Nos', rate: 950, gstRate: 18, stock: 80, location: 'Annex Store' },
       { name: 'A4 Copy Paper (500 Sheets)', sku: 'ITM-1005', category: 'Consumables', hsnCode: '48025600', unit: 'Ream', rate: 280, gstRate: 5, stock: 400, location: 'Stationery Store' },
-      { name: 'Business Accounting Services', sku: 'SRV-2001', category: 'Software & Licensing', hsnCode: '998313', unit: 'Month', rate: 15000, gstRate: 18, stock: 0, location: 'Services' },
-      { name: 'Cloud Infrastructure Subscription', sku: 'SRV-2002', category: 'Software & Licensing', hsnCode: '998311', unit: 'Month', rate: 1800, gstRate: 18, stock: 0, location: 'Services' }
+      { name: 'Business Accounting Services', sku: 'SRV-2001', category: 'Software & Licensing', hsnCode: '998313', unit: 'Month', rate: 15000, gstRate: 18, stock: 0, location: 'Services', tracksInventory: false },
+      { name: 'Cloud Infrastructure Subscription', sku: 'SRV-2002', category: 'Software & Licensing', hsnCode: '998311', unit: 'Month', rate: 1800, gstRate: 18, stock: 0, location: 'Services', tracksInventory: false }
     ];
 
     for (const item of defaultItems) {

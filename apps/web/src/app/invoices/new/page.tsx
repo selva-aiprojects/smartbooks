@@ -3,33 +3,37 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthHeaders } from '../../../lib/api';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  TextField, 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  Box,
+  Typography,
+  Paper,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   IconButton,
   Divider,
   Checkbox,
   FormControlLabel,
-  CircularProgress
+  CircularProgress,
+  Autocomplete
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, ArrowBack } from '@mui/icons-material';
 import Link from 'next/link';
 
 interface Customer { id: string; name: string; }
-interface InvoiceLineItem { description: string; quantity: number; unitPrice: number; gstRate: number; hsnCode: string; }
+interface CatalogItem { id: string; name: string; sku: string; hsnCode: string | null; rate: number; gstRate: number; unit: string; stock: number; tracksInventory: boolean; }
+interface InvoiceLineItem { itemId: string | null; description: string; quantity: number; unitPrice: number; gstRate: number; hsnCode: string; }
 
 const gstRates = [0, 5, 12, 18, 28];
 
 export default function NewInvoicePage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [customerId, setCustomerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-2026-${Math.floor(100 + Math.random() * 900)}`);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
@@ -38,29 +42,54 @@ export default function NewInvoicePage() {
   const [loadingEntities, setLoadingEntities] = useState(true);
 
   const [items, setItems] = useState<InvoiceLineItem[]>([
-    { description: 'Enterprise Accounting Services', quantity: 1, unitPrice: 3500, gstRate: 18, hsnCode: '998313' },
+    { itemId: null, description: 'Enterprise Accounting Services', quantity: 1, unitPrice: 3500, gstRate: 18, hsnCode: '998313' },
   ]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/invoices/customers', { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
+    Promise.all([
+      fetch('/api/invoices/customers', { headers: getAuthHeaders() }),
+      fetch('/api/items', { headers: getAuthHeaders() }),
+    ])
+      .then(async ([custRes, itemRes]) => {
+        if (custRes.ok) {
+          const data = await custRes.json();
           if (Array.isArray(data) && data.length > 0) {
             setCustomers(data);
             setCustomerId(data[0].id);
           }
         }
-      } catch (e) { /* fall back to manual entry */ }
-      setLoadingEntities(false);
-    }
-    load();
+        if (itemRes.ok) {
+          const data = await itemRes.json();
+          if (Array.isArray(data)) setCatalog(data);
+        }
+      })
+      .catch(() => { /* fall back to manual entry */ })
+      .finally(() => {
+        setLoadingEntities(false);
+        setCatalogLoading(false);
+      });
   }, []);
 
+  const applyCatalogItem = (index: number, item: CatalogItem | null) => {
+    const copy = [...items];
+    if (item) {
+      copy[index] = {
+        itemId: item.id,
+        description: item.name,
+        quantity: Math.min(copy[index].quantity || 1, item.tracksInventory && item.stock > 0 ? Number(item.stock) : Number.MAX_SAFE_INTEGER),
+        unitPrice: Number(item.rate) || 0,
+        gstRate: Number(item.gstRate) || 0,
+        hsnCode: item.hsnCode || '',
+      };
+    } else {
+      copy[index] = { ...copy[index], itemId: null };
+    }
+    setItems(copy);
+  };
+
   const handleAddItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0, gstRate: 18, hsnCode: '' }]);
+    setItems([...items, { itemId: null, description: '', quantity: 1, unitPrice: 0, gstRate: 18, hsnCode: '' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -89,6 +118,7 @@ export default function NewInvoicePage() {
           dueDate,
           isInterState,
           items: items.map(i => ({
+            itemId: i.itemId,
             description: i.description,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
@@ -184,76 +214,94 @@ export default function NewInvoicePage() {
             Invoice Line Items
           </Typography>
 
-          {items.map((item, index) => (
-            <Box key={index} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 0.7fr 1.4fr 0.75fr 1fr auto' }, gap: 2, alignItems: 'center' }}>
-              <TextField
-                label="Description"
-                value={item.description}
-                onChange={(e) => {
-                  const copy = [...items];
-                  copy[index].description = e.target.value;
-                  setItems(copy);
-                }}
-                required
+          {items.map((item, index) => {
+            const selected = catalog.find((c) => c.id === item.itemId) || null;
+            return (
+            <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+              <Autocomplete
+                options={catalog}
+                getOptionLabel={(opt) => `${opt.sku} — ${opt.name}${opt.tracksInventory ? ` (stock: ${Number(opt.stock)})` : ''}`}
+                value={selected}
+                onChange={(_, val) => applyCatalogItem(index, val)}
+                loading={catalogLoading}
+                size="small"
+                renderInput={(params) => (
+                  <TextField {...params} label="Item from catalog (optional)" />
+                )}
               />
-
-              <TextField
-                label="Qty"
-                type="number"
-                value={item.quantity}
-                onChange={(e) => {
-                  const copy = [...items];
-                  copy[index].quantity = parseInt(e.target.value) || 1;
-                  setItems(copy);
-                }}
-                required
-              />
-
-              <TextField
-                label="Price (₹)"
-                type="number"
-                value={item.unitPrice}
-                onChange={(e) => {
-                  const copy = [...items];
-                  copy[index].unitPrice = parseFloat(e.target.value) || 0;
-                  setItems(copy);
-                }}
-                required
-              />
-
-              <FormControl fullWidth>
-                <InputLabel>GST %</InputLabel>
-                <Select
-                  value={item.gstRate}
-                  label="GST %"
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 0.7fr 1.4fr 0.75fr 1fr auto' }, gap: 2, alignItems: 'center' }}>
+                <TextField
+                  label="Description"
+                  value={item.description}
                   onChange={(e) => {
                     const copy = [...items];
-                    copy[index].gstRate = Number(e.target.value);
+                    copy[index].description = e.target.value;
                     setItems(copy);
                   }}
-                >
-                  {gstRates.map((g) => (
-                    <MenuItem key={g} value={g}>{g}%</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  required
+                />
 
-              <TextField
-                label="HSN"
-                value={item.hsnCode}
-                onChange={(e) => {
-                  const copy = [...items];
-                  copy[index].hsnCode = e.target.value;
-                  setItems(copy);
-                }}
-                placeholder="e.g. 998313"
-              />
+                <TextField
+                  label="Qty"
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const copy = [...items];
+                    copy[index].quantity = parseInt(e.target.value) || 1;
+                    setItems(copy);
+                  }}
+                  required
+                  helperText={selected && selected.tracksInventory && Number(item.quantity) > Number(selected.stock) ? `Only ${Number(selected.stock)} in stock` : undefined}
+                  error={!!(selected && selected.tracksInventory && Number(item.quantity) > Number(selected.stock))}
+                />
 
-              <IconButton color="error" onClick={() => handleRemoveItem(index)} disabled={items.length === 1}>
-                <DeleteIcon />
-              </IconButton>
+                <TextField
+                  label="Price (₹)"
+                  type="number"
+                  value={item.unitPrice}
+                  onChange={(e) => {
+                    const copy = [...items];
+                    copy[index].unitPrice = parseFloat(e.target.value) || 0;
+                    setItems(copy);
+                  }}
+                  required
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel>GST %</InputLabel>
+                  <Select
+                    value={item.gstRate}
+                    label="GST %"
+                    onChange={(e) => {
+                      const copy = [...items];
+                      copy[index].gstRate = Number(e.target.value);
+                      setItems(copy);
+                    }}
+                  >
+                    {gstRates.map((g) => (
+                      <MenuItem key={g} value={g}>{g}%</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <TextField
+                  label="HSN"
+                  value={item.hsnCode}
+                  onChange={(e) => {
+                    const copy = [...items];
+                    copy[index].hsnCode = e.target.value;
+                    setItems(copy);
+                  }}
+                  placeholder="e.g. 998313"
+                />
+
+                <IconButton color="error" onClick={() => handleRemoveItem(index)} disabled={items.length === 1}>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
             </Box>
-          ))}
+            );
+          })}
 
           <Button startIcon={<AddIcon />} variant="outlined" onClick={handleAddItem} sx={{ alignSelf: 'flex-start' }}>
             Add Line Item

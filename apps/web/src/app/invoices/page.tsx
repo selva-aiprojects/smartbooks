@@ -11,10 +11,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Add as AddIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
+import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
 
@@ -49,6 +53,18 @@ const columns: GridColDef[] = [
     valueFormatter: (value: any) => `₹${(Number(value) || 0).toLocaleString('en-IN')}` 
   },
   { 
+    field: 'amountPaid', 
+    headerName: 'Paid (₹)', 
+    width: 120,
+    renderCell: (params) => {
+      const paid = Number(params.value) || 0;
+      const total = Number(params.row.totalAmount) || 0;
+      return paid >= total && total > 0
+        ? <Chip label="Fully paid" color="success" size="small" />
+        : `₹${paid.toLocaleString('en-IN')}`;
+    }
+  },
+  { 
     field: 'totalAmount', 
     headerName: 'Total (₹)', 
     width: 130,
@@ -57,9 +73,9 @@ const columns: GridColDef[] = [
 ];
 
 const mockInvoices = [
-  { id: '1', number: 'INV-2026-001', customerName: 'Acme Global Tech', issueDate: '2026-08-01', dueDate: '2026-08-15', status: 'Sent', taxableAmount: 3813.56, gstAmount: 686.44, totalAmount: 4500 },
-  { id: '2', number: 'INV-2026-002', customerName: 'Nexus Digital Solutions', issueDate: '2026-07-15', dueDate: '2026-07-30', status: 'Paid', taxableAmount: 3389.83, gstAmount: 610.17, totalAmount: 4000 },
-  { id: '3', number: 'INV-2026-003', customerName: 'Vanguard Retail Inc', issueDate: '2026-06-01', dueDate: '2026-06-15', status: 'Overdue', taxableAmount: 2372.88, gstAmount: 427.12, totalAmount: 2800 },
+  { id: '1', number: 'INV-2026-001', customerName: 'Acme Global Tech', issueDate: '2026-08-01', dueDate: '2026-08-15', status: 'Sent', taxableAmount: 3813.56, gstAmount: 686.44, totalAmount: 4500, amountPaid: 0 },
+  { id: '2', number: 'INV-2026-002', customerName: 'Nexus Digital Solutions', issueDate: '2026-07-15', dueDate: '2026-07-30', status: 'Paid', taxableAmount: 3389.83, gstAmount: 610.17, totalAmount: 4000, amountPaid: 4000 },
+  { id: '3', number: 'INV-2026-003', customerName: 'Vanguard Retail Inc', issueDate: '2026-06-01', dueDate: '2026-06-15', status: 'Overdue', taxableAmount: 2372.88, gstAmount: 427.12, totalAmount: 2800, amountPaid: 0 },
 ];
 
 export default function InvoicesPage() {
@@ -68,15 +84,19 @@ export default function InvoicesPage() {
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
+  const [payInvoice, setPayInvoice] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState<number>(0);
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [payMethod, setPayMethod] = useState('Cash');
+  const [paying, setPaying] = useState(false);
 
-  useEffect(() => {
-    async function fetchInvoices() {
-      try {
-        const res = await fetch('/api/invoices', { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setRows(data.map((item: any) => ({
+  const loadInvoices = async () => {
+    try {
+      const res = await fetch('/api/invoices', { headers: getAuthHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setRows(data.map((item: any) => ({
               id: item.id,
               number: item.number,
               customerName: item.customer?.name || 'N/A',
@@ -86,17 +106,53 @@ export default function InvoicesPage() {
               taxableAmount: item.taxableAmount,
               gstAmount: item.gstAmount,
               totalAmount: item.totalAmount,
+              amountPaid: (item.payments || []).reduce((s: number, p: any) => s + Number(p.amount), 0),
             })));
-          }
         }
-      } catch (err) {
-        console.error('Error fetching invoices:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error('Error fetching invoices:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchInvoices();
+  };
+
+  useEffect(() => {
+    loadInvoices();
   }, []);
+
+  const openPayment = (row: any) => {
+    setPayInvoice(row);
+    setPayAmount(Math.round((Number(row.totalAmount) - Number(row.amountPaid)) * 100) / 100);
+    setPayDate(new Date().toISOString().split('T')[0]);
+    setPayMethod('Cash');
+  };
+
+  const handlePay = async () => {
+    if (!payInvoice || payAmount <= 0) return;
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/invoices/${payInvoice.id}/payments`, {
+        method: 'POST',
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ amount: payAmount, date: payDate, method: payMethod })
+      });
+      if (res.ok) {
+        setPayInvoice(null);
+        setPaying(false);
+        setLoading(true);
+        await loadInvoices();
+        return;
+      }
+      const data = await res.json();
+      alert(data.error || 'Failed to record payment');
+    } catch (err) {
+      console.error(err);
+      alert('Backend unreachable. Payment not recorded.');
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const handleAddCustomer = async () => {
     if (!newCustomerName) return;
@@ -155,7 +211,23 @@ export default function InvoicesPage() {
         ) : (
         <DataGrid
           rows={rows}
-          columns={columns}
+          columns={[
+            ...columns,
+            {
+              field: 'recordPayment',
+              headerName: 'Actions',
+              width: 140,
+              sortable: false,
+              renderCell: (params) =>
+                params.row.status !== 'Paid' && params.row.status !== 'Void' ? (
+                  <Button size="small" variant="outlined" startIcon={<PaymentsIcon />} onClick={() => openPayment(params.row)}>
+                    Record Payment
+                  </Button>
+                ) : (
+                  <Chip label="Paid" color="success" size="small" />
+                )
+            }
+          ]}
           pageSizeOptions={[5, 10, 25]}
           checkboxSelection
           disableRowSelectionOnClick
@@ -185,6 +257,51 @@ export default function InvoicesPage() {
         <DialogActions>
           <Button onClick={() => setOpenCustomerModal(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleAddCustomer}>Add Customer</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Record Payment Modal */}
+      <Dialog open={!!payInvoice} onClose={() => setPayInvoice(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          Record Payment — {payInvoice?.number}
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Invoice total ₹{(Number(payInvoice?.totalAmount) || 0).toLocaleString('en-IN')} · Outstanding ₹{(Math.max(0, Number(payInvoice?.totalAmount) - Number(payInvoice?.amountPaid))).toLocaleString('en-IN')}
+          </Typography>
+          <TextField
+            label="Payment Amount (₹)"
+            type="number"
+            value={payAmount}
+            onChange={(e) => setPayAmount(Number(e.target.value))}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Payment Date"
+            type="date"
+            value={payDate}
+            onChange={(e) => setPayDate(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            required
+          />
+          <FormControl fullWidth>
+            <InputLabel>Payment Method</InputLabel>
+            <Select value={payMethod} label="Payment Method" onChange={(e) => setPayMethod(e.target.value)}>
+              <MenuItem value="Cash">Cash</MenuItem>
+              <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+              <MenuItem value="Cheque">Cheque</MenuItem>
+              <MenuItem value="UPI">UPI</MenuItem>
+              <MenuItem value="Card">Card</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPayInvoice(null)} disabled={paying}>Cancel</Button>
+          <Button variant="contained" onClick={handlePay} disabled={paying || payAmount <= 0}>
+            {paying ? 'Recording...' : 'Record Payment'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

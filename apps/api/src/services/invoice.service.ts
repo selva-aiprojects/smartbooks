@@ -14,7 +14,7 @@ export async function createCustomer(data: { companyId: string; name: string; em
 export async function getInvoices(companyId: string) {
   return await prisma.invoice.findMany({
     where: { companyId },
-    include: { customer: true, items: true },
+    include: { customer: true, items: true, payments: true },
     orderBy: { createdAt: 'desc' }
   });
 }
@@ -27,7 +27,7 @@ export async function createInvoice(data: {
   issueDate: Date | string;
   dueDate: Date | string;
   isInterState?: boolean;
-  items: Array<{ description: string; quantity: number; unitPrice: number; hsnCode?: string | null; gstRate?: number }>;
+  items: Array<{ description: string; quantity: number; unitPrice: number; hsnCode?: string | null; gstRate?: number; itemId?: string | null }>;
 }) {
   const { companyId, createdById, customerId, items, isInterState, ...rest } = data;
 
@@ -66,6 +66,7 @@ export async function createInvoice(data: {
         totalAmount,
         items: {
           create: items.map((i, idx) => ({
+            itemId: i.itemId || null,
             description: i.description,
             hsnCode: i.hsnCode || null,
             quantity: i.quantity,
@@ -93,8 +94,34 @@ export async function createInvoice(data: {
       invoice.isInterState
     );
 
+    await deductInventory(tx, companyId, items);
+
     return invoice;
   });
+}
+
+async function deductInventory(
+  tx: any,
+  companyId: string,
+  items: Array<{ itemId?: string | null; quantity: number }>
+) {
+  for (const line of items) {
+    if (!line.itemId) continue;
+    const item = await tx.item.findFirst({ where: { id: line.itemId, companyId, active: true } });
+    if (!item) {
+      throw new Error('Item not found or not active for this company');
+    }
+    if (!item.tracksInventory) continue;
+    const qty = Number(line.quantity) || 0;
+    const stock = Number(item.stock) || 0;
+    if (stock < qty) {
+      throw new Error(`Insufficient stock for ${item.name} (SKU ${item.sku}): only ${stock} available, ${qty} required`);
+    }
+    await tx.item.update({
+      where: { id: item.id },
+      data: { stock: stock - qty }
+    });
+  }
 }
 
 async function postInvoiceJournal(
@@ -147,6 +174,84 @@ async function postInvoiceJournal(
       createdById,
       lines: { create: lines }
     }
+  });
+}
+
+export async function recordInvoicePayment(
+  id: string,
+  data: { amount: number; date: Date | string; method?: string; reference?: string | null },
+  companyId: string,
+  userId: string
+) {
+  const amount = Number(data.amount) || 0;
+  if (amount <= 0) {
+    throw new Error('Payment amount must be greater than zero');
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findFirst({ where: { id, companyId }, include: { customer: true } });
+    if (!invoice) {
+      throw new Error('Invoice not found or not in this company');
+    }
+    if (invoice.status === 'Void') {
+      throw new Error('Cannot record a payment against a void invoice');
+    }
+
+    const payment = await tx.invoicePayment.create({
+      data: {
+        invoiceId: id,
+        amount,
+        date: new Date(data.date || new Date()),
+        method: data.method || 'Cash',
+        reference: data.reference || null,
+        createdById: userId
+      }
+    });
+
+    const cashAcc = await tx.account.findFirst({ where: { companyId, code: '1010' } });
+    const arAcc = await tx.account.findFirst({ where: { companyId, code: '1020' } });
+    if (!cashAcc || !arAcc) {
+      throw new Error(`Required GL accounts (1010 Cash, 1020 A/R) missing for company ${companyId}`);
+    }
+
+    await tx.journalEntry.create({
+      data: {
+        companyId,
+        date: new Date(data.date || new Date()),
+        description: `Payment received for Invoice #${invoice.number}${payment.reference ? ` (${payment.reference})` : ''}`,
+        status: 'Posted',
+        createdById: userId,
+        lines: {
+          create: [
+            { accountId: cashAcc.id, amount, type: 'debit', description: `Cash received from ${invoice.customer.name}` },
+            { accountId: arAcc.id, amount, type: 'credit', description: `Receivable reduced for Invoice #${invoice.number}` }
+          ]
+        }
+      }
+    });
+
+    const paidSoFar = await tx.invoicePayment.aggregate({
+      where: { invoiceId: id },
+      _sum: { amount: true }
+    });
+    const paid = Number(paidSoFar._sum.amount) || 0;
+    let status = invoice.status;
+    if (paid >= Number(invoice.totalAmount)) {
+      status = 'Paid';
+    } else if (paid > 0 && invoice.status === 'Sent') {
+      status = 'Sent';
+    }
+
+    if (status !== invoice.status) {
+      await tx.invoice.update({ where: { id }, data: { status } });
+    }
+
+    const updated = await tx.invoice.findUnique({
+      where: { id },
+      include: { customer: true, items: true, payments: true }
+    });
+
+    return { payment, invoice: updated };
   });
 }
 
