@@ -16,6 +16,22 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
+function resolveTenantForEmail(email: string): { id: string; name: string } | null {
+  const e = email.toLowerCase();
+  if (e.includes('xyzcorp.in') || e.includes('xyz')) return { id: 'tenant-xyz-corp', name: 'XYZ Corporation' };
+  if (e.includes('nexusretail.com') || e.includes('nexus')) return { id: 'tenant-nexus', name: 'Nexus Retail & Supermarkets' };
+  if (e.includes('vanguardmfg.com')) return { id: 'tenant-vanguard', name: 'Vanguard Manufacturing Ltd' };
+  if (e.includes('apexhealth.com')) return { id: 'tenant-apex', name: 'Apex Healthcare & Diagnostics' };
+  if (e.includes('flavorsfnb.com')) return { id: 'tenant-flavors', name: 'Flavors Restaurant & Hospitality' };
+  return null;
+}
+
+function persistTenantId(tenantId: string) {
+  try {
+    localStorage.setItem('smartbooks_active_tenant_id', tenantId);
+  } catch (e) { /* ignore */ }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -25,7 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem('user');
     if (savedToken && savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const restored = JSON.parse(savedUser);
+        const demo = resolveTenantForEmail(restored.email || '');
+        if (demo) {
+          restored.companyId = demo.id;
+          restored.company = { ...(restored.company || {}), name: demo.name };
+          persistTenantId(demo.id);
+        }
+        setUser(restored);
         setIsAuthenticated(true);
       } catch (e) {
         localStorage.removeItem('token');
@@ -35,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    const demo = resolveTenantForEmail(email);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -44,6 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const { token, user } = await response.json();
+        if (demo) {
+          user.companyId = demo.id;
+          user.company = { ...(user.company || {}), name: demo.name };
+          persistTenantId(demo.id);
+        }
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
@@ -62,21 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email.toLowerCase() === 'admin@smartbooks.ai' ||
       email.toLowerCase() === 'admin@smartbooks.com';
 
-    if (email.toLowerCase().includes('xyzcorp.in') || email.toLowerCase().includes('xyz')) {
-      tenantId = 'tenant-xyz-corp';
-      companyName = 'XYZ Corporation';
-    } else if (email.toLowerCase().includes('nexusretail.com') || email.toLowerCase().includes('nexus')) {
-      tenantId = 'tenant-nexus';
-      companyName = 'Nexus Retail & Supermarkets';
-    } else if (email.toLowerCase().includes('vanguardmfg.com')) {
-      tenantId = 'tenant-vanguard';
-      companyName = 'Vanguard Manufacturing Ltd';
-    } else if (email.toLowerCase().includes('apexhealth.com')) {
-      tenantId = 'tenant-apex';
-      companyName = 'Apex Healthcare & Diagnostics';
-    } else if (email.toLowerCase().includes('flavorsfnb.com')) {
-      tenantId = 'tenant-flavors';
-      companyName = 'Flavors Restaurant & Hospitality';
+    if (demo) {
+      tenantId = demo.id;
+      companyName = demo.name;
     }
 
     const fallbackUser = {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export type TenantRole = 'Owner' | 'Tenant Admin' | 'Finance Manager' | 'Accountant' | 'Inventory Manager' | 'Cashier';
 
@@ -480,6 +481,7 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   // Initialize to SSR-safe defaults (no window/localStorage) so the server and
   // first client render match, avoiding React hydration errors. Persisted state
   // is restored in a useEffect below after hydration completes.
@@ -530,6 +532,20 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     setActiveTenantId(restoredActive);
     setIsSuperAdminState(restoredSuper);
   }, []);
+
+  // Keep the active tenant aligned with the authenticated user's company so a
+  // demo tenant user (e.g. XYZ Corporation) never lands on ACME details after
+  // login or on reload. Super admins are exempt so they can freely switch.
+  useEffect(() => {
+    if (!user || user.isSuperAdmin) return;
+    const tenantId = user.companyId as string | undefined;
+    if (!tenantId || !tenants.some(t => t.id === tenantId)) return;
+    if (tenantId === activeTenantId) return;
+    setActiveTenantId(tenantId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('smartbooks_active_tenant_id', tenantId);
+    }
+  }, [user, tenants, activeTenantId]);
 
   const setIsSuperAdmin = (val: boolean) => {
     setIsSuperAdminState(val);
