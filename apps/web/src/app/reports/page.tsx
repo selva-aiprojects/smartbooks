@@ -4,18 +4,31 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Button, Chip, Card, CardContent, Divider, CircularProgress,
+  TextField, Stack,
 } from '@mui/material';
-import { Download as DownloadIcon, Print as PrintIcon } from '@mui/icons-material';
+import { Download as DownloadIcon, Print as PrintIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { getAuthHeaders } from '../../lib/api';
 import { useTenant } from '../../context/TenantContext';
 
 interface TBRow { code: string; name: string; type: string; debit: number; credit: number; }
+
+interface PnLAccount { code: string; name: string; amount: number; lines: Array<{ entryId: string; date: string; type: string; amount: number; description: string }>; }
+interface AgingBucket { bracket: string; amount: number; count: number; items: Array<{ id: string; number: string; name: string; dueDate: string; daysOverdue: number; outstanding: number }>; }
 
 export default function FinancialReportsPage() {
   const { activeTenant } = useTenant();
   const [tabValue, setTabValue] = useState(0);
   const [trialBalance, setTrialBalance] = useState<TBRow[] | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [pnl, setPnl] = useState<{ revenue: PnLAccount[]; expenses: PnLAccount[]; totalRevenue: number; totalExpenses: number; netProfit: number; grossMargin: number; from: string | null; to: string | null } | null>(null);
+  const [pnlLoading, setPnlLoading] = useState(false);
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [fromDate, setFromDate] = useState(`${new Date().getFullYear()}-01-01`);
+  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [aging, setAging] = useState<{ receivables: { total: number; buckets: AgingBucket[] }; payables: { total: number; buckets: AgingBucket[] } } | null>(null);
+  const [agingLoading, setAgingLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -56,6 +69,41 @@ export default function FinancialReportsPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    async function loadPnl() {
+      setPnlLoading(true);
+      try {
+        const qs = new URLSearchParams();
+        if (fromDate) qs.set('from', fromDate);
+        if (toDate) qs.set('to', toDate);
+        const res = await fetch(`/api/reports/profit-loss?${qs.toString()}`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.revenue)) setPnl(data);
+        }
+      } catch (e) { /* keep demo */ } finally {
+        setPnlLoading(false);
+      }
+    }
+    loadPnl();
+  }, [fromDate, toDate]);
+
+  useEffect(() => {
+    async function loadAging() {
+      setAgingLoading(true);
+      try {
+        const res = await fetch('/api/reports/aging', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.receivables && data.payables) setAging(data);
+        }
+      } catch (e) { /* demo */ } finally {
+        setAgingLoading(false);
+      }
+    }
+    loadAging();
+  }, []);
+
   const demoBalanceSheet = {
     assets: [
       { code: '1010', name: 'Cash on Hand', amount: 25000 },
@@ -87,26 +135,124 @@ export default function FinancialReportsPage() {
     if (!trialBalance) return demoBalanceSheet.equity;
     return trialBalance.filter(r => r.type === 'Equity').map(r => ({ code: r.code, name: r.name, amount: r.credit - r.debit }));
   }, [trialBalance]);
-  const incomeRevenueRows = useMemo(() => {
-    if (!trialBalance) return demoIncome.revenue;
-    return trialBalance.filter(r => r.type === 'Revenue').map(r => ({ code: r.code, name: r.name, amount: r.credit - r.debit }));
-  }, [trialBalance]);
-  const incomeExpenseRows = useMemo(() => {
-    if (!trialBalance) return demoIncome.expenses;
-    return trialBalance.filter(r => r.type === 'Expense').map(r => ({ code: r.code, name: r.name, amount: r.debit - r.credit }));
-  }, [trialBalance]);
 
   const totalAssets = balanceAssetRows.reduce((s, i) => s + Math.abs(i.amount), 0);
   const totalLiabilities = balanceLiabilityRows.reduce((s, i) => s + Math.abs(i.amount), 0);
   const totalEquity = balanceEquityRows.reduce((s, i) => s + Math.abs(i.amount), 0);
-  const totalRevenue = incomeRevenueRows.reduce((s, i) => s + i.amount, 0);
-  const totalExpenses = incomeExpenseRows.reduce((s, i) => s + i.amount, 0);
-  const netIncome = totalRevenue - totalExpenses;
+  const totalRevenue = pnl ? pnl.totalRevenue : demoIncome.revenue.reduce((s, i) => s + i.amount, 0);
+  const totalExpenses = pnl ? pnl.totalExpenses : demoIncome.expenses.reduce((s, i) => s + i.amount, 0);
+  const netProfit = totalRevenue - totalExpenses;
 
   const tbTotalDebit = trialBalance ? trialBalance.reduce((s, r) => s + r.debit, 0) : 0;
   const tbTotalCredit = trialBalance ? trialBalance.reduce((s, r) => s + r.credit, 0) : 0;
 
   const handleExport = () => alert('Report downloaded successfully!');
+
+  const toggleAccount = (code: string) => {
+    setExpandedAccounts((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
+
+  const renderPnlRows = (rows: PnLAccount[], positive: boolean) => {
+    return rows.map((row) => {
+      const expanded = expandedAccounts.has(row.code);
+      const display = positive ? row.amount : Math.abs(row.amount);
+      return (
+        <Box key={row.code}>
+          <TableRow hover onClick={() => toggleAccount(row.code)} sx={{ cursor: 'pointer', bgcolor: '#f8fafc' }}>
+            <TableCell><Chip label={row.code} size="small" variant="outlined" color={positive ? 'success' : 'error'} /></TableCell>
+            <TableCell>{row.name}</TableCell>
+            <TableCell align="right">₹{display.toLocaleString('en-IN')}</TableCell>
+            <TableCell align="right">
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">{(row.lines || []).length} lines</Typography>
+                {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+              </Box>
+            </TableCell>
+          </TableRow>
+          {expanded && (
+            <TableRow key={`${row.code}-detail`}>
+              <TableCell colSpan={4} sx={{ bgcolor: '#ffffff', py: 0 }}>
+                <Table size="small" sx={{ m: 1, mb: 2 }}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f1f5f9' }}>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Description</TableCell>
+                      <TableCell align="right">Amount (₹)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(row.lines || []).map((l, idx) => (
+                      <TableRow key={`${row.code}-${idx}`}>
+                        <TableCell>{l.date ? new Date(l.date).toISOString().split('T')[0] : ''}</TableCell>
+                        <TableCell>{l.description}</TableCell>
+                        <TableCell align="right">{l.type === 'debit' ? '-' : ''}₹{Number(l.amount).toLocaleString('en-IN')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableCell>
+            </TableRow>
+          )}
+        </Box>
+      );
+    });
+  };
+
+  const renderAgingBuckets = (buckets: AgingBucket[]) => {
+    return (
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(5, 1fr)' }, gap: 2 }}>
+        {buckets.map(b => (
+          <Card key={b.bracket} sx={{ borderTop: b.bracket === 'Current' ? '3px solid #10b981' : b.bracket === '1-30 Days' ? '3px solid #0284c7' : b.bracket === '31-60 Days' ? '3px solid #f59e0b' : '3px solid #ef4444' }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="caption" color="text.secondary">{b.bracket}</Typography>
+              <Typography variant="h6" fontWeight="bold">₹{b.amount.toLocaleString('en-IN')}</Typography>
+              <Typography variant="caption" color="text.secondary">{b.count} open item(s)</Typography>
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    );
+  };
+
+  const renderAgingItems = (buckets: AgingBucket[]) => {
+    return buckets.map((b) => (
+      <Box key={b.bracket} sx={{ mb: 3 }}>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f1f5f9' }}>
+                <TableCell>{b.bracket}</TableCell>
+                <TableCell>Reference</TableCell>
+                <TableCell>Customer / Vendor</TableCell>
+                <TableCell align="right">Due Date</TableCell>
+                <TableCell align="right">Days Overdue</TableCell>
+                <TableCell align="right">Outstanding (₹)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(b.items || []).length === 0 ? (
+                <TableRow><TableCell colSpan={6} sx={{ color: 'text.secondary' }}>No open items.</TableCell></TableRow>
+              ) : b.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell><Chip label={b.bracket === 'Current' ? 'On track' : 'Past due'} size="small" variant="outlined" color={b.bracket === 'Current' ? 'success' : 'warning'} /></TableCell>
+                  <TableCell><strong>{item.number}</strong></TableCell>
+                  <TableCell>{item.name}</TableCell>
+                  <TableCell align="right">{item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : ''}</TableCell>
+                  <TableCell align="right">{item.daysOverdue > 0 ? item.daysOverdue : '—'}</TableCell>
+                  <TableCell align="right"><strong>₹{item.outstanding.toLocaleString('en-IN')}</strong></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    ));
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -114,7 +260,7 @@ export default function FinancialReportsPage() {
         <Box>
           <Typography variant="h4" fontWeight="600" gutterBottom>Financial Reports</Typography>
           <Typography variant="body2" color="text.secondary">
-            GAAP & IFRS compliant Balance Sheet, Profit &amp; Loss and Trial Balance{live ? ` for ${activeTenant?.name}` : ''}.
+            GAAP & IFRS compliant Balance Sheet, Profit &amp; Loss, Trial Balance and Aging Reports{live ? ` for ${activeTenant?.name}` : ''}.
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -128,6 +274,7 @@ export default function FinancialReportsPage() {
           <Tab label="Balance Sheet" />
           <Tab label="Profit & Loss (P&L)" />
           <Tab label="Trial Balance" />
+          <Tab label="Aging (AR / AP)" />
         </Tabs>
       </Paper>
 
@@ -194,6 +341,27 @@ export default function FinancialReportsPage() {
 
           {tabValue === 1 && (
             <>
+              <Paper sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
+                <Typography variant="body2" sx={{ alignSelf: 'center' }}>Period:</Typography>
+                <TextField
+                  label="From"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  size="small"
+                />
+                <TextField
+                  label="To"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  size="small"
+                />
+                {pnlLoading && <CircularProgress size={20} />}
+                {pnl && pnl.from && <Chip label={`${pnl.from} → ${pnl.to}`} size="small" color="primary" variant="outlined" />}
+              </Paper>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
                 <Card sx={{ borderLeft: '4px solid #10b981' }}><CardContent>
                   <Typography color="text.secondary" variant="body2">Total Operating Revenue</Typography>
@@ -205,25 +373,44 @@ export default function FinancialReportsPage() {
                 </CardContent></Card>
                 <Card sx={{ borderLeft: '4px solid #0284c7' }}><CardContent>
                   <Typography color="text.secondary" variant="body2">Net Income (Profit)</Typography>
-                  <Typography variant="h4" fontWeight="bold" sx={{ color: netIncome >= 0 ? '#0284c7' : '#ef4444', mt: 0.5 }}>₹{netIncome.toLocaleString('en-IN')}</Typography>
+                  <Typography variant="h4" fontWeight="bold" sx={{ color: netProfit >= 0 ? '#0284c7' : '#ef4444', mt: 0.5 }}>₹{netProfit.toLocaleString('en-IN')}</Typography>
                 </CardContent></Card>
               </Box>
               <Paper sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>Income / Revenue Statement</Typography>
-                <TableContainer><Table size="small">
-                  <TableHead><TableRow sx={{ backgroundColor: '#f1f5f9' }}>
-                    <TableCell>Code</TableCell><TableCell>Account Name</TableCell><TableCell align="right">Amount (₹)</TableCell>
-                  </TableRow></TableHead>
-                  <TableBody>
-                    {incomeRevenueRows.map((row) => (
-                      <TableRow key={row.code}><TableCell><Chip label={row.code} size="small" color="success" variant="outlined" /></TableCell><TableCell>{row.name}</TableCell><TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell></TableRow>
-                    ))}
-                    {incomeExpenseRows.map((row) => (
-                      <TableRow key={row.code}><TableCell><Chip label={row.code} size="small" color="error" variant="outlined" /></TableCell><TableCell>{row.name}</TableCell><TableCell align="right">-₹{Math.abs(row.amount).toLocaleString('en-IN')}</TableCell></TableRow>
-                    ))}
-                    <TableRow sx={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}><TableCell colSpan={2}><strong>Net Profit / (Loss)</strong></TableCell><TableCell align="right"><strong>₹{netIncome.toLocaleString('en-IN')}</strong></TableCell></TableRow>
-                  </TableBody>
-                </Table></TableContainer>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="h6" fontWeight="bold">Income / Revenue Statement</Typography>
+                  <Chip label={pnl ? 'From Ledger' : 'No period data'} size="small" color={pnl ? 'success' : 'warning'} />
+                </Box>
+                {pnlLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+                ) : (
+                  <TableContainer><Table size="small">
+                    <TableHead><TableRow sx={{ backgroundColor: '#f1f5f9' }}>
+                      <TableCell>Code</TableCell><TableCell>Account Name</TableCell><TableCell align="right">Amount (₹)</TableCell><TableCell align="right">Drill-down</TableCell>
+                    </TableRow></TableHead>
+                    <TableBody>
+                      {pnl ? (
+                        <>
+                          {renderPnlRows(pnl.revenue || [], true)}
+                          {renderPnlRows(pnl.expenses || [], false)}
+                          {(pnl.revenue.length === 0 && pnl.expenses.length === 0) && (
+                            <TableRow><TableCell colSpan={4} align="center" sx={{ color: 'text.secondary' }}>No postings in this period.</TableCell></TableRow>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {demoIncome.revenue.map((row) => (
+                            <TableRow key={row.code}><TableCell><Chip label={row.code} size="small" color="success" variant="outlined" /></TableCell><TableCell>{row.name}</TableCell><TableCell align="right">₹{row.amount.toLocaleString('en-IN')}</TableCell><TableCell /></TableRow>
+                          ))}
+                          {demoIncome.expenses.map((row) => (
+                            <TableRow key={row.code}><TableCell><Chip label={row.code} size="small" color="error" variant="outlined" /></TableCell><TableCell>{row.name}</TableCell><TableCell align="right">-₹{Math.abs(row.amount).toLocaleString('en-IN')}</TableCell><TableCell /></TableRow>
+                          ))}
+                        </>
+                      )}
+                      <TableRow sx={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}><TableCell colSpan={2}><strong>Net Profit / (Loss)</strong></TableCell><TableCell align="right"><strong>₹{netProfit.toLocaleString('en-IN')}</strong></TableCell><TableCell /></TableRow>
+                    </TableBody>
+                  </Table></TableContainer>
+                )}
               </Paper>
             </>
           )}
@@ -259,6 +446,37 @@ export default function FinancialReportsPage() {
                 </Table></TableContainer>
               )}
             </Paper>
+          )}
+
+          {tabValue === 3 && (
+            <>
+              {agingLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}><CircularProgress /></Box>
+              ) : !aging ? (
+                <Paper sx={{ p: 3, borderRadius: 2 }}>
+                  <Typography color="text.secondary">No aging data available. Record invoices and bills to build AR / AP aging reports.</Typography>
+                </Paper>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Paper sx={{ p: 3, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" fontWeight="bold">Accounts Receivable Aging</Typography>
+                      <Chip label={`Total ₹${aging.receivables.total.toLocaleString('en-IN')}`} color="primary" variant="outlined" />
+                    </Box>
+                    {renderAgingBuckets(aging.receivables.buckets)}
+                    {renderAgingItems(aging.receivables.buckets)}
+                  </Paper>
+                  <Paper sx={{ p: 3, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" fontWeight="bold">Accounts Payable Aging</Typography>
+                      <Chip label={`Total ₹${aging.payables.total.toLocaleString('en-IN')}`} color="primary" variant="outlined" />
+                    </Box>
+                    {renderAgingBuckets(aging.payables.buckets)}
+                    {renderAgingItems(aging.payables.buckets)}
+                  </Paper>
+                </Box>
+              )}
+            </>
           )}
         </Box>
       )}

@@ -14,7 +14,7 @@ export async function createVendor(data: { companyId: string; name: string; emai
 export async function getBills(companyId: string) {
   return await prisma.bill.findMany({
     where: { companyId },
-    include: { vendor: true, items: true },
+    include: { vendor: true, items: true, payments: true },
     orderBy: { createdAt: 'desc' }
   });
 }
@@ -151,8 +151,86 @@ async function postBillJournal(
   });
 }
 
+export async function recordBillPayment(
+  id: string,
+  data: { amount: number; date: Date | string; method?: string; reference?: string | null },
+  companyId: string,
+  userId: string
+) {
+  const amount = Number(data.amount) || 0;
+  if (amount <= 0) {
+    throw new Error('Payment amount must be greater than zero');
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const bill = await tx.bill.findFirst({ where: { id, companyId }, include: { vendor: true } });
+    if (!bill) {
+      throw new Error('Bill not found or not in this company');
+    }
+    if (bill.status === 'Void') {
+      throw new Error('Cannot record a payment against a void bill');
+    }
+
+    const payment = await tx.billPayment.create({
+      data: {
+        billId: id,
+        amount,
+        date: new Date(data.date || new Date()),
+        method: data.method || 'Cash',
+        reference: data.reference || null,
+        createdById: userId
+      }
+    });
+
+    const apAcc = await tx.account.findFirst({ where: { companyId, code: '2010' } });
+    const cashAcc = await tx.account.findFirst({ where: { companyId, code: '1010' } });
+    if (!apAcc || !cashAcc) {
+      throw new Error(`Required GL accounts (2010 A/P, 1010 Cash) missing for company ${companyId}`);
+    }
+
+    await tx.journalEntry.create({
+      data: {
+        companyId,
+        date: new Date(data.date || new Date()),
+        description: `Payment made for Bill #${bill.number}${payment.reference ? ` (${payment.reference})` : ''}`,
+        status: 'Posted',
+        createdById: userId,
+        lines: {
+          create: [
+            { accountId: apAcc.id, amount, type: 'debit', description: `Payable reduced for Bill #${bill.number}` },
+            { accountId: cashAcc.id, amount, type: 'credit', description: `Cash disbursement to ${bill.vendor.name}` }
+          ]
+        }
+      }
+    });
+
+    const paidSoFar = await tx.billPayment.aggregate({
+      where: { billId: id },
+      _sum: { amount: true }
+    });
+    const paid = Number(paidSoFar._sum.amount) || 0;
+    let status = bill.status;
+    if (paid >= Number(bill.totalAmount)) {
+      status = 'Paid';
+    } else if (paid > 0 && bill.status === 'Unpaid') {
+      status = 'Partially Paid';
+    }
+
+    if (status !== bill.status) {
+      await tx.bill.update({ where: { id }, data: { status } });
+    }
+
+    const updated = await tx.bill.findUnique({
+      where: { id },
+      include: { vendor: true, items: true, payments: true }
+    });
+
+    return { payment, bill: updated };
+  });
+}
+
 export async function updateBillStatus(id: string, status: string, companyId: string, userId: string) {
-  if (!['Unpaid', 'Paid', 'Overdue', 'Void'].includes(status)) {
+  if (!['Unpaid', 'Partially Paid', 'Paid', 'Overdue', 'Void'].includes(status)) {
     throw new Error(`Invalid bill status: "${status}"`);
   }
 

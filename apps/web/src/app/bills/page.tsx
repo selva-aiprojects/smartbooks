@@ -11,10 +11,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Add as AddIcon, Storefront as StorefrontIcon } from '@mui/icons-material';
+import { Add as AddIcon, Storefront as StorefrontIcon, Payments as PaymentsIcon } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
 
@@ -26,13 +30,27 @@ const columns: GridColDef[] = [
   { 
     field: 'status', 
     headerName: 'Payment Status', 
-    width: 140,
+    width: 145,
     renderCell: (params) => {
       const status = params.value;
       let color: 'default' | 'info' | 'success' | 'warning' | 'error' = 'warning';
       if (status === 'Paid') color = 'success';
+      if (status === 'Partially Paid') color = 'info';
       if (status === 'Overdue') color = 'error';
       return <Chip label={status} color={color} size="small" />;
+    }
+  },
+  { 
+    field: 'amountPaid', 
+    headerName: 'Paid (₹)', 
+    width: 150,
+    valueGetter: (params: any) => Number(params.row.amountPaid) || 0,
+    renderCell: (params) => {
+      const paid = Number(params.value) || 0;
+      const total = Number(params.row.totalAmount) || 0;
+      return total > 0 && paid >= total
+        ? <Chip label="Fully paid" color="success" size="small" />
+        : `₹${paid.toLocaleString('en-IN')}`;
     }
   },
   { 
@@ -56,9 +74,9 @@ const columns: GridColDef[] = [
 ];
 
 const mockBills = [
-  { id: '1', number: 'BILL-8801', vendorName: 'AWS Cloud Services', billDate: '2026-08-01', dueDate: '2026-08-15', status: 'Unpaid', taxableAmount: 1525.42, gstAmount: 274.58, totalAmount: 1800 },
-  { id: '2', number: 'BILL-8802', vendorName: 'City Office Supplies Co', billDate: '2026-07-20', dueDate: '2026-08-04', status: 'Paid', taxableAmount: 1016.95, gstAmount: 183.05, totalAmount: 1200 },
-  { id: '3', number: 'BILL-8803', vendorName: 'Metropolitan Real Estate', billDate: '2026-07-01', dueDate: '2026-07-15', status: 'Paid', taxableAmount: 2966.1, gstAmount: 533.9, totalAmount: 3500 },
+  { id: '1', number: 'BILL-8801', vendorName: 'AWS Cloud Services', billDate: '2026-08-01', dueDate: '2026-08-15', status: 'Unpaid', taxableAmount: 1525.42, gstAmount: 274.58, totalAmount: 1800, amountPaid: 0 },
+  { id: '2', number: 'BILL-8802', vendorName: 'City Office Supplies Co', billDate: '2026-07-20', dueDate: '2026-08-04', status: 'Paid', taxableAmount: 1016.95, gstAmount: 183.05, totalAmount: 1200, amountPaid: 1200 },
+  { id: '3', number: 'BILL-8803', vendorName: 'Metropolitan Real Estate', billDate: '2026-07-01', dueDate: '2026-07-15', status: 'Paid', taxableAmount: 2966.1, gstAmount: 533.9, totalAmount: 3500, amountPaid: 3500 },
 ];
 
 export default function BillsPage() {
@@ -68,34 +86,75 @@ export default function BillsPage() {
   const [newVendorName, setNewVendorName] = useState('');
   const [newVendorEmail, setNewVendorEmail] = useState('');
 
-  useEffect(() => {
-    async function fetchBills() {
-      try {
-        const res = await fetch('/api/bills', { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setRows(data.map((item: any) => ({
-              id: item.id,
-              number: item.number,
-              vendorName: item.vendor?.name || 'N/A',
-              billDate: item.billDate ? new Date(item.billDate).toISOString().split('T')[0] : '',
-              dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
-              status: item.status,
-              taxableAmount: item.taxableAmount,
-              gstAmount: item.gstAmount,
-              totalAmount: item.totalAmount,
-            })));
-          }
+  const [payBill, setPayBill] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState(0);
+  const [payDate, setPayDate] = useState('');
+  const [payMethod, setPayMethod] = useState('Cash');
+  const [paying, setPaying] = useState(false);
+
+  const loadBills = async () => {
+    try {
+      const res = await fetch('/api/bills', { headers: getAuthHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setRows(data.map((item: any) => ({
+            id: item.id,
+            number: item.number,
+            vendorName: item.vendor?.name || 'N/A',
+            billDate: item.billDate ? new Date(item.billDate).toISOString().split('T')[0] : '',
+            dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
+            status: item.status,
+            taxableAmount: item.taxableAmount,
+            gstAmount: item.gstAmount,
+            totalAmount: item.totalAmount,
+            amountPaid: (item.payments || []).reduce((s: number, p: any) => s + Number(p.amount), 0),
+          })));
         }
-      } catch (err) {
-        console.error('Error fetching bills:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error('Error fetching bills:', err);
+    } finally {
+      setLoading(false);
     }
-    fetchBills();
+  };
+
+  useEffect(() => {
+    loadBills();
   }, []);
+
+  const openPayment = (row: any) => {
+    setPayBill(row);
+    setPayAmount(Math.round((Number(row.totalAmount) - Number(row.amountPaid)) * 100) / 100);
+    setPayDate(new Date().toISOString().split('T')[0]);
+    setPayMethod('Cash');
+  };
+
+  const handlePay = async () => {
+    if (!payBill || payAmount <= 0) return;
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/bills/${payBill.id}/payments`, {
+        method: 'POST',
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ amount: payAmount, date: payDate, method: payMethod })
+      });
+      if (res.ok) {
+        setPayBill(null);
+        setPaying(false);
+        setLoading(true);
+        await loadBills();
+        return;
+      }
+      const data = await res.json();
+      alert(data.error || 'Failed to record payment');
+    } catch (err) {
+      console.error(err);
+      alert('Backend unreachable. Payment not recorded.');
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const handleAddVendor = async () => {
     if (!newVendorName) return;
@@ -155,7 +214,23 @@ export default function BillsPage() {
         ) : (
         <DataGrid
           rows={rows}
-          columns={columns}
+          columns={[
+            ...columns,
+            {
+              field: 'recordPayment',
+              headerName: 'Actions',
+              width: 140,
+              sortable: false,
+              renderCell: (params) =>
+                params.row.status !== 'Paid' && params.row.status !== 'Void' ? (
+                  <Button size="small" variant="outlined" startIcon={<PaymentsIcon />} onClick={() => openPayment(params.row)}>
+                    Record Payment
+                  </Button>
+                ) : (
+                  <Chip label="Paid" color="success" size="small" />
+                )
+            }
+          ]}
           pageSizeOptions={[5, 10, 25]}
           checkboxSelection
           disableRowSelectionOnClick
@@ -185,6 +260,51 @@ export default function BillsPage() {
         <DialogActions>
           <Button onClick={() => setOpenVendorModal(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleAddVendor}>Add Vendor</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Record Payment Modal */}
+      <Dialog open={!!payBill} onClose={() => setPayBill(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          Record Payment — {payBill?.number}
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Bill total ₹{(Number(payBill?.totalAmount) || 0).toLocaleString('en-IN')} · Outstanding ₹{(Math.max(0, Number(payBill?.totalAmount) - Number(payBill?.amountPaid))).toLocaleString('en-IN')}
+          </Typography>
+          <TextField
+            label="Payment Amount (₹)"
+            type="number"
+            value={payAmount}
+            onChange={(e) => setPayAmount(Number(e.target.value))}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Payment Date"
+            type="date"
+            value={payDate}
+            onChange={(e) => setPayDate(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            fullWidth
+            required
+          />
+          <FormControl fullWidth>
+            <InputLabel>Payment Method</InputLabel>
+            <Select value={payMethod} label="Payment Method" onChange={(e) => setPayMethod(e.target.value)}>
+              <MenuItem value="Cash">Cash</MenuItem>
+              <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+              <MenuItem value="Cheque">Cheque</MenuItem>
+              <MenuItem value="UPI">UPI</MenuItem>
+              <MenuItem value="Card">Card</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPayBill(null)} disabled={paying}>Cancel</Button>
+          <Button variant="contained" onClick={handlePay} disabled={paying || payAmount <= 0}>
+            {paying ? 'Recording...' : 'Record Payment'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

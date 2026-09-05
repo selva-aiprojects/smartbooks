@@ -4,6 +4,7 @@ import {
   createVendor, 
   getBills, 
   createBill, 
+  recordBillPayment,
   updateBillStatus 
 } from '../services/bill.service';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -59,6 +60,17 @@ export async function addBill(req: AuthRequest, res: Response) {
       items
     });
     res.status(201).json(bill);
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+}
+
+export async function recordBillPaymentController(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { amount, date, method, reference } = req.body;
+    const result = await recordBillPayment(id, { amount, date, method, reference }, req.user.companyId, req.user.userId);
+    res.status(201).json(result);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }

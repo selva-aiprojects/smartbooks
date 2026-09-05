@@ -59,6 +59,7 @@ model User {
   roles              Role[]
   journalEntries     JournalEntry[]
   invoicePayments    InvoicePayment[]
+  billPayments       BillPayment[]
 
   @@index([companyId])
 }
@@ -252,11 +253,27 @@ model Bill {
   isInterState   Boolean    @default(false)
   totalAmount    Decimal    @default(0) @db.Decimal(19, 2)
   items          BillItem[]
+  payments       BillPayment[]
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
   @@index([companyId])
   @@index([companyId, status])
+}
+
+model BillPayment {
+  id          String   @id @default(uuid())
+  billId      String
+  bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount      Decimal  @default(0) @db.Decimal(19, 2)
+  date        DateTime
+  method      String   @default("Cash")
+  reference   String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([billId])
 }
 
 model BillItem {
