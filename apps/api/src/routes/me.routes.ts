@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import {
   getCompanySettings,
   updateCompanySettings,
+  fetchEntities,
   getUsers,
   inviteUser,
   updateUser,
@@ -13,6 +14,8 @@ import {
 const router = Router();
 
 router.use(authenticate);
+
+router.get('/entities', fetchEntities);
 
 router.get('/company', getCompanySettings);
 router.patch('/company', updateCompanySettings);

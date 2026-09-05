@@ -120,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('smartbooks_active_entity_id');
     setUser(null);
     setIsAuthenticated(false);
   };

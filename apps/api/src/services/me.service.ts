@@ -69,3 +69,39 @@ export async function resetMyUserPassword(companyId: string, userId: string) {
   await assertUserInCompany(userId, companyId);
   return resetUserPassword(userId);
 }
+
+const entityCompanySelect = {
+  id: true,
+  name: true,
+  displayName: true,
+  subdomain: true,
+  entityType: true,
+  parentCompanyId: true,
+  currency: true,
+  gstin: true,
+};
+
+export async function getAccessibleEntities(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, companyId: true } });
+  if (!user) throw new Error('User not found');
+
+  const home = await prisma.company.findUnique({
+    where: { id: user.companyId },
+    select: entityCompanySelect,
+  });
+  if (!home) throw new Error('Company not found');
+
+  const children =
+    home.entityType === 'parent'
+      ? await prisma.company.findMany({
+          where: { parentCompanyId: home.id },
+          select: entityCompanySelect,
+          orderBy: { name: 'asc' },
+        })
+      : [];
+
+  return [
+    { ...home, isHome: true },
+    ...children.map((c) => ({ ...c, isHome: false })),
+  ];
+}

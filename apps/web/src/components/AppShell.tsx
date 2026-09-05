@@ -126,7 +126,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { tenants, visibleTenants, activeTenant, isSuperAdmin, setIsSuperAdmin, switchTenant } = useTenant();
+  const { tenants, visibleTenants, activeTenant, baseTenant, isSuperAdmin, setIsSuperAdmin, switchTenant, accessibleEntities, activeCompanyId, switchEntity } = useTenant();
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -397,7 +397,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {isSuperAdmin ? (
               <FormControl size="small" sx={{ minWidth: 200, display: { xs: 'none', sm: 'flex' } }}>
                 <Select
-                  value={activeTenant.id}
+                  value={baseTenant.id}
                   onChange={(e) => switchTenant(e.target.value)}
                   sx={{
                     borderRadius: 2,
@@ -449,6 +449,52 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   sx={{ height: 20, fontSize: 10, fontWeight: 700, ml: 0.5 }} 
                 />
               </Box>
+            )}
+
+            {/* Cross-Entity Access (Parent → Child Entities, e.g. XYZ Shipment Ltd / XYZ Warehouses Ltd) */}
+            {accessibleEntities.length > 1 && (
+              <FormControl size="small" sx={{ minWidth: 220, display: { xs: 'none', sm: 'flex' } }}>
+                <Select
+                  value={activeCompanyId || ''}
+                  onChange={(e) => switchEntity(e.target.value as string)}
+                  displayEmpty
+                  renderValue={(v) => {
+                    const cur = accessibleEntities.find((en) => en.id === v) || null;
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden' }}>
+                        <BusinessCenterIcon sx={{ fontSize: 16, color: '#64748b' }} />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle2" fontWeight="700" fontSize={12} noWrap>
+                            {cur ? (cur.displayName || cur.name) : 'Select Entity'}
+                          </Typography>
+                          {cur && (
+                            <Typography variant="caption" color="text.secondary" fontSize={10} display="block" noWrap>
+                              {cur.isHome ? 'Holding •' : 'Child Entity •'} {cur.subdomain}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: '#f0fdf4',
+                    borderColor: '#86efac',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    '& .MuiSelect-select': { py: 0.75, display: 'flex', alignItems: 'center' }
+                  }}
+                >
+                  {accessibleEntities.map((e) => (
+                    <MenuItem key={e.id} value={e.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 1 }}>
+                      <Typography variant="subtitle2" fontWeight="700">{e.displayName || e.name}{e.isHome ? ' (Holding)' : ''}</Typography>
+                      <Typography variant="caption" color="text.secondary" fontSize={11}>
+                        {e.entityType === 'parent' ? 'Parent / Holding Entity' : 'Child Entity'} · {e.subdomain}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             )}
 
             {/* Toggle Super Admin Mode (Restricted Security Control) */}

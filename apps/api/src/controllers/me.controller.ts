@@ -7,6 +7,7 @@ import {
   updateMyUser,
   deleteMyUser,
   resetMyUserPassword,
+  getAccessibleEntities,
 } from '../services/me.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 
@@ -25,6 +26,16 @@ export async function updateCompanySettings(req: Request, res: Response) {
     const companyId = (req as AuthRequest).user.companyId;
     const company = await updateMyCompany(companyId, req.body);
     res.json({ message: 'Organization settings updated', company });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+}
+
+export async function fetchEntities(req: Request, res: Response) {
+  try {
+    const userId = (req as AuthRequest).user.userId;
+    const entities = await getAccessibleEntities(userId);
+    res.json(entities);
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
   }

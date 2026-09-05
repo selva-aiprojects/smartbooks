@@ -113,6 +113,38 @@ export async function loginUser(email: string, password: string) {
   return { token, user };
 }
 
+export async function switchUserEntity(userId: string, targetCompanyId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, companyId: true } });
+  if (!user) throw new Error('User not found');
+
+  const target = await prisma.company.findUnique({
+    where: { id: targetCompanyId },
+    select: { id: true, entityType: true, parentCompanyId: true },
+  });
+  if (!target) throw new Error('Entity not found');
+
+  const allowed =
+    target.id === user.companyId ||
+    (target.entityType !== 'parent' && target.parentCompanyId === user.companyId);
+
+  if (!allowed) {
+    throw new Error('Not authorized to access this entity');
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, companyId: target.id },
+    config.jwt_secret_key,
+    { expiresIn: '1d' }
+  );
+
+  const company = await prisma.company.findUnique({
+    where: { id: target.id },
+    select: { name: true, displayName: true, subdomain: true, gstin: true }
+  });
+
+  return { token, companyId: target.id, company };
+}
+
 export async function getUserById(id: string) {
   return await prisma.user.findUnique({ 
     where: { id },

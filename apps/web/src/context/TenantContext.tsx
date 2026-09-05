@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { getAuthHeaders } from '../lib/api';
 
 export type TenantRole = 'Owner' | 'Tenant Admin' | 'Finance Manager' | 'Accountant' | 'Inventory Manager' | 'Cashier';
 
@@ -46,6 +47,18 @@ export interface TenantEntity {
   metrics?: Partial<TenantMetrics>;
 }
 
+export interface AccessibleEntity {
+  id: string;
+  name: string;
+  displayName: string | null;
+  subdomain: string;
+  entityType: string | null;
+  parentCompanyId: string | null;
+  currency: string;
+  gstin: string | null;
+  isHome: boolean;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -59,6 +72,7 @@ export interface Tenant {
   billingCycle?: 'Monthly' | 'Annual';
   nextBillingDate?: string;
   subscriptionStatus?: 'Active' | 'Past Due' | 'Trial';
+  entityName?: string;
   metrics: TenantMetrics;
   users: TenantUser[];
   entities?: TenantEntity[];
@@ -468,9 +482,14 @@ interface TenantContextType {
   tenants: Tenant[];
   visibleTenants: Tenant[];
   activeTenant: Tenant;
+  baseTenant: Tenant;
   isSuperAdmin: boolean;
   setIsSuperAdmin: (value: boolean) => void;
   switchTenant: (tenantId: string) => void;
+  accessibleEntities: AccessibleEntity[];
+  activeCompanyId: string | null;
+  switchEntity: (companyId: string) => Promise<void>;
+  resetEntity: () => void;
   addTenant: (newTenant: Partial<Tenant>) => void;
   addTenantUser: (tenantId: string, user: Omit<TenantUser, 'id' | 'createdAt'>) => void;
   updateTenantUser: (tenantId: string, userId: string, updates: Partial<TenantUser>) => void;
@@ -488,6 +507,32 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
   const [activeTenantId, setActiveTenantId] = useState<string>('tenant-acme');
   const [isSuperAdmin, setIsSuperAdminState] = useState<boolean>(false);
+  const [accessibleEntities, setAccessibleEntities] = useState<AccessibleEntity[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+
+  // Load the entity companies (own + child entities) the current user may access.
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/me/entities', { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) return;
+        if (cancelled) return;
+        setAccessibleEntities(data);
+        const home = data.find((e: AccessibleEntity) => e.isHome);
+        let active = home?.id || data[0].id;
+        const saved = typeof window !== 'undefined' ? window.localStorage.getItem('smartbooks_active_entity_id') : null;
+        if (saved && data.some((e: AccessibleEntity) => e.id === saved)) active = saved;
+        setActiveCompanyId(active);
+      } catch (e) {
+        /* API unreachable — stay on home entity */
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let restoredTenants = INITIAL_TENANTS;
@@ -554,7 +599,28 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const activeTenant = tenants.find(t => t.id === activeTenantId) || tenants[0];
+  const baseTenant = tenants.find(t => t.id === activeTenantId) || tenants[0];
+
+  const homeCompanyId = accessibleEntities.find(e => e.isHome)?.id || null;
+  const activeEntity = (activeCompanyId && homeCompanyId && activeCompanyId !== homeCompanyId)
+    ? accessibleEntities.find(e => e.id === activeCompanyId) || null
+    : null;
+
+  // When the accountant/super-admin has switched into a child entity, overlay the
+  // active tenant display (name/schema) with the child company while keeping the
+  // parent tenant as the base for switching and permissions.
+  const activeTenant: Tenant = activeEntity
+    ? {
+        ...baseTenant,
+        id: activeEntity.id,
+        name: activeEntity.displayName || activeEntity.name,
+        subdomain: activeEntity.subdomain,
+        schema: `tenant_${activeEntity.subdomain}`,
+        gstin: activeEntity.gstin || baseTenant.gstin,
+        currency: activeEntity.currency || baseTenant.currency,
+        entityName: activeEntity.name,
+      }
+    : baseTenant;
 
   // In strict tenant isolation mode (non-SuperAdmin), only the active tenant is visible
   const visibleTenants = isSuperAdmin ? tenants : [activeTenant];
@@ -572,6 +638,33 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('smartbooks_active_tenant_id', tenantId);
       }
     }
+  };
+
+  const switchEntity = async (companyId: string) => {
+    if (!companyId || companyId === activeCompanyId) return;
+    try {
+      const res = await fetch('/api/auth/switch-entity', {
+        method: 'POST',
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ companyId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        window.localStorage.setItem('token', data.token);
+        window.localStorage.setItem('smartbooks_active_entity_id', companyId);
+        window.location.reload();
+      } else {
+        alert(data.error || 'Entity switch failed');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Backend unreachable. Entity switch failed.');
+    }
+  };
+
+  const resetEntity = () => {
+    const home = accessibleEntities.find((e) => e.isHome);
+    if (home) switchEntity(home.id);
   };
 
   const saveTenants = (updated: Tenant[]) => {
@@ -691,9 +784,14 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       tenants, 
       visibleTenants,
       activeTenant, 
+      baseTenant,
       isSuperAdmin,
       setIsSuperAdmin,
       switchTenant, 
+      accessibleEntities,
+      activeCompanyId,
+      switchEntity,
+      resetEntity,
       addTenant,
       addTenantUser,
       updateTenantUser,
