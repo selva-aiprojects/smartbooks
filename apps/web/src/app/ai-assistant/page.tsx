@@ -156,61 +156,95 @@ export default function AIAssistantPage() {
       const res = await fetch('/api/ai/stream', {
         method: 'POST',
         headers: getAuthHeaders(true),
-        body: JSON.stringify({
-          query: text,
-          history: conversationHistory,
-        }),
+        body: JSON.stringify({ query: text, history: conversationHistory }),
       });
 
-      if (!res.body) throw new Error('No response body');
+      // ── Check HTTP status BEFORE reading stream body ──────────────────────
+      if (!res.ok) {
+        if (res.status === 401) {
+          fullText = '⚠️ **Session expired.** Please refresh the page and log in again.';
+        } else if (res.status === 503) {
+          setApiKeyMissing(true);
+          fullText = '⚠️ **AI not configured.** Add `GEMINI_API_KEY` to your `.env` file, then restart the API server (`Ctrl+C` → `npm run dev`).';
+        } else {
+          const errJson = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          fullText = `⚠️ ${errJson?.error || `Server error (${res.status})`}`;
+        }
+      } else {
+        // ── Read SSE stream ───────────────────────────────────────────────────
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+        readLoop: while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+          const rawChunk = decoder.decode(value, { stream: true });
+          const lines = rawChunk.split('\n').filter((l) => l.startsWith('data: '));
 
-        const rawChunk = decoder.decode(value, { stream: true });
-        const lines = rawChunk.split('\n').filter((l) => l.startsWith('data: '));
-
-        for (const line of lines) {
-          try {
-            const payload = JSON.parse(line.slice(6));
-            if (payload.error) {
-              if (payload.error.includes('GEMINI_API_KEY')) {
-                setApiKeyMissing(true);
+          for (const line of lines) {
+            try {
+              const payload = JSON.parse(line.slice(6));
+              if (payload.error) {
+                const isKeyError = /gemini_api_key|api key|not configured/i.test(payload.error);
+                if (isKeyError) setApiKeyMissing(true);
+                fullText = `⚠️ ${payload.error}`;
+                break readLoop;
               }
-              fullText = `⚠️ ${payload.error}`;
-              break;
+              if (payload.done) break readLoop;
+              if (payload.token) {
+                fullText += payload.token;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText } : m))
+                );
+              }
+            } catch {
+              // skip malformed SSE chunks
             }
-            if (payload.done) break;
-            if (payload.token) {
-              fullText += payload.token;
-              setMessages((prev) =>
-                prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText } : m))
-              );
+          }
+        }
+
+        // ── Stream was empty — fall back to non-streaming /query endpoint ────
+        if (!fullText) {
+          try {
+            const fallback = await fetch('/api/ai/query', {
+              method: 'POST',
+              headers: getAuthHeaders(true),
+              body: JSON.stringify({ query: text }),
+            });
+            if (fallback.ok) {
+              const data = await fallback.json();
+              fullText = data.answer || '⚠️ AI returned no response. Try rephrasing your question.';
+            } else if (fallback.status === 503) {
+              setApiKeyMissing(true);
+              fullText = '⚠️ **AI not configured.** Add `GEMINI_API_KEY` to `.env` and restart the server.';
+            } else if (fallback.status === 401) {
+              fullText = '⚠️ **Session expired.** Please refresh and log in again.';
+            } else {
+              fullText = '⚠️ AI service error. Check the API server logs for details.';
             }
           } catch {
-            // skip malformed chunks
+            fullText = '⚠️ Could not reach the AI service. Make sure the API server is running on port 3000.';
           }
         }
       }
-    } catch (err) {
-      fullText = '⚠️ Unable to reach the AI service. Please check that the API server is running.';
+    } catch (err: any) {
+      if (!fullText) {
+        fullText = '⚠️ Connection error. Make sure the API server is running (`npm run dev`).';
+      }
     } finally {
-      // Finalise the streaming message
+      // Finalise — never show raw "..."
       setMessages((prev) =>
-        prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText || '...', streaming: false } : m))
+        prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText || '⚠️ No response received.', streaming: false } : m))
       );
-
-      // Append to conversation history for multi-turn context
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: 'user', parts: [{ text }] },
-        { role: 'model', parts: [{ text: fullText }] },
-      ]);
-
+      // Only add clean answers to conversation history
+      if (fullText && !fullText.startsWith('⚠️')) {
+        setConversationHistory((prev) => [
+          ...prev,
+          { role: 'user', parts: [{ text }] },
+          { role: 'model', parts: [{ text: fullText }] },
+        ]);
+      }
       setLoading(false);
     }
   }, [query, loading, conversationHistory]);
