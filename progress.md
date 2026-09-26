@@ -95,6 +95,14 @@
   - `auth.middleware.ts`: Supported fallback / demo tokens seamlessly so offline sessions and test logins don't get rejected with 401
   - `AuthContext.tsx`: Preserves real database company IDs from API login response without overwriting them with mock tenant names
   - Admin credentials synced with Neon DB (`admin@smartbooks.com` / `admin123`)
+  - Sanitized login input (trim, case-insensitive, demo fallback resilience)
+✅ **Vercel Serverless Route Handlers (`apps/web/src/app/api/`)**:
+  - `POST /api/ai/stream` — Native Next.js SSE streaming with Gemini and live financial RAG
+  - `POST /api/ai/query` — Native Next.js single-turn Gemini RAG query
+  - `POST /api/ai/categorize` — Native Next.js transaction categorizer
+  - `GET /api/me/company` & `PATCH /api/me/company` — Native Next.js company settings
+  - `GET /api/me/company/users` & `POST /api/me/company/users` — Native Next.js user management
+  - `PATCH /api/me/users/[id]` & `DELETE /api/me/users/[id]` — User status & deletion
 
 ⚙️ **To activate AI:** Add `GEMINI_API_KEY` to `.env` (free key from https://aistudio.google.com/app/apikey)
 

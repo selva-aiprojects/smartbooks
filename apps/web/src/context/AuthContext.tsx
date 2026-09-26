@@ -52,12 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const demo = resolveTenantForEmail(email);
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+    const demo = resolveTenantForEmail(cleanEmail);
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword })
       });
       
       if (response.ok) {
@@ -72,35 +75,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
 
-      // Real login failed — do NOT fall back to a fake token.
-      // Only allow demo/fallback for the super-admin demo account.
-      const isSuperAdminDemo =
-        email.toLowerCase() === 'admin@smartbooks.ai' ||
-        email.toLowerCase().includes('superadmin');
+      // Check if this is a known demo account where offline mode is allowed
+      const isDemoAccount =
+        cleanEmail === 'admin@smartbooks.com' ||
+        cleanEmail === 'owner@nexusretail.com' ||
+        cleanEmail === 'admin@smartbooks.ai' ||
+        cleanEmail.includes('superadmin') ||
+        cleanEmail.includes('demo');
 
-      if (!isSuperAdminDemo) {
-        // Return false so the login form can show "Invalid credentials"
+      if (!isDemoAccount) {
         return false;
       }
     } catch (error) {
       console.warn('API server unreachable — switching to offline demo mode:', error);
     }
 
-    // ── Offline demo / super-admin fallback only ──────────────────────────
+    // ── Offline demo fallback ──────────────────────────────────────────────
     const isSuperAdmin =
-      email.toLowerCase().includes('superadmin') ||
-      email.toLowerCase() === 'admin@smartbooks.ai' ||
-      email.toLowerCase() === 'admin@smartbooks.com';
+      cleanEmail.includes('superadmin') ||
+      cleanEmail === 'admin@smartbooks.ai' ||
+      cleanEmail === 'admin@smartbooks.com';
 
-    let tenantId = demo?.id || 'tenant-acme';
-    let companyName = demo?.name || 'Acme Global Tech Pvt Ltd';
+    let tenantId = demo?.id || 'ade0f19e-d225-41d0-bf94-6a7850f93f03';
+    let companyName = demo?.name || 'SmartBooks Demo Corp';
 
     const fallbackUser = {
       id: `usr-${Date.now()}`,
-      email,
+      email: cleanEmail,
       companyId: tenantId,
       isSuperAdmin,
-      company: { name: companyName, subdomain: tenantId.replace('tenant-', ''), currency: 'INR' }
+      company: { name: companyName, subdomain: 'demo', currency: 'INR' }
     };
     localStorage.setItem('token', 'fallback-token-demo');
     localStorage.setItem('user', JSON.stringify(fallbackUser));

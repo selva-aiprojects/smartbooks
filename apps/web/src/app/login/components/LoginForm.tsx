@@ -74,7 +74,7 @@ export default function LoginForm() {
         router.push('/gateway');
       }
     } else {
-      setError('Invalid credentials. Try admin@smartbooks.com (Nexus Admin) or owner@nexusretail.com (Tenant).');
+      setError('Authentication failed. Please verify your email and password, or click "Nexus Admin" / "Tenant Demo" above for instant 1-click access.');
       setIsLoading(false);
     }
   };
