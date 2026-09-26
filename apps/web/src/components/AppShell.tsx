@@ -64,7 +64,9 @@ import {
   History as HistoryIcon,
   Sync as SyncIcon,
   LocalShipping as TruckIcon,
-  Badge as PayrollIcon
+  Badge as PayrollIcon,
+  RequestQuote as EstimateIcon,
+  AssignmentReturn as CreditNoteIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -91,6 +93,8 @@ const booksItems = [
 
 const registerItems = [
   { label: 'Customer Invoices', path: '/invoices', icon: <InvoicesIcon /> },
+  { label: 'Quotations / Estimates', path: '/quotations', icon: <EstimateIcon /> },
+  { label: 'Credit & Debit Notes', path: '/credit-notes', icon: <CreditNoteIcon /> },
   { label: 'Vendor Bills', path: '/bills', icon: <BillsIcon /> },
   { label: 'e-Way Bills', path: '/e-way-bills', icon: <TruckIcon /> },
   { label: 'Cash / Bank & Payments', path: '/payments', icon: <PaymentsIcon /> },

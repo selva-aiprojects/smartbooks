@@ -28,7 +28,9 @@ import {
   WhatsApp as WhatsAppIcon,
   OpenInNew as OpenInNewIcon,
   Autorenew as AutorenewIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  ReceiptLong as CreditNoteIcon,
+  RequestQuote as QuotationIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
@@ -356,6 +358,24 @@ export default function InvoicesPage() {
             href="/invoices/recurring"
           >
             Recurring Retainers
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<QuotationIcon />}
+            component={Link}
+            href="/quotations"
+            sx={{ borderColor: '#0284c7', color: '#0284c7' }}
+          >
+            Quotations / Estimates
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<CreditNoteIcon />}
+            component={Link}
+            href="/credit-notes"
+          >
+            Credit / Debit Notes
           </Button>
           <Button
             variant="outlined"

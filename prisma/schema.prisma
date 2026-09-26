@@ -45,6 +45,8 @@ model Company {
   tdsEntries        TdsEntry[]
   employees         Employee[]
   salarySlips       SalarySlip[]
+  creditNotes       CreditNote[]
+  quotations        Quotation[]
 }
 
 model User {
@@ -165,6 +167,8 @@ model Customer {
   phone     String?
   address   String?
   invoices  Invoice[]
+  creditNotes CreditNote[]
+  quotations Quotation[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -447,4 +451,64 @@ model SalarySlip {
   @@unique([companyId, employeeId, month, year])
   @@index([companyId])
 }
+
+model CreditNote {
+  id                String    @id @default(uuid())
+  companyId         String
+  company           Company   @relation(fields: [companyId], references: [id])
+  customerId        String?
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  invoiceId         String?
+  noteNumber        String
+  noteType          String    @default("CREDIT") // CREDIT or DEBIT
+  issueDate         DateTime  @default(now())
+  reason            String    @default("01-Sales Return") // 01-Sales Return, 02-Post Sale Discount, 03-Deficiency in Services, 04-Correction in Invoice
+  originalInvoiceNo String?
+  taxableAmount     Decimal   @default(0) @db.Decimal(19, 2)
+  gstRate           Decimal   @default(0) @db.Decimal(5, 2)
+  gstAmount         Decimal   @default(0) @db.Decimal(19, 2)
+  totalAmount       Decimal   @default(0) @db.Decimal(19, 2)
+  status            String    @default("Issued") // Issued, Adjusted, Void
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, noteType])
+}
+
+model Quotation {
+  id                 String          @id @default(uuid())
+  companyId          String
+  company            Company         @relation(fields: [companyId], references: [id])
+  customerId         String?
+  customer           Customer?       @relation(fields: [customerId], references: [id])
+  number             String
+  date               DateTime        @default(now())
+  validUntil         DateTime
+  status             String          @default("Draft") // Draft, Sent, Accepted, Converted, Expired
+  taxableAmount      Decimal         @default(0) @db.Decimal(19, 2)
+  gstAmount          Decimal         @default(0) @db.Decimal(19, 2)
+  totalAmount        Decimal         @default(0) @db.Decimal(19, 2)
+  convertedInvoiceId String?
+  items              QuotationItem[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([companyId])
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  description String
+  hsnCode     String?
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @default(0) @db.Decimal(19, 2)
+  amount      Decimal   @default(0) @db.Decimal(19, 2)
+  gstRate     Decimal   @default(0) @db.Decimal(5, 2)
+  gstAmount   Decimal   @default(0) @db.Decimal(19, 2)
+}
+
 

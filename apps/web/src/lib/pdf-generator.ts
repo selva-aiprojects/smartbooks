@@ -682,4 +682,151 @@ export function exportSalarySlipPdf(data: {
   doc.save(`Payslip_${data.employee.employeeCode}_${monthName}_${data.slip.year}.pdf`);
 }
 
+export interface CreditDebitNotePdfInput {
+  company: {
+    name: string;
+    gstin?: string | null;
+    address?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
+  customer: {
+    name: string;
+    gstin?: string | null;
+    address?: string | null;
+  };
+  note: {
+    noteNumber: string;
+    noteType: 'CREDIT' | 'DEBIT' | string;
+    issueDate: string;
+    originalInvoiceNo?: string | null;
+    reason: string;
+    taxableAmount: number;
+    gstRate: number;
+    gstAmount: number;
+    totalAmount: number;
+    notes?: string | null;
+  };
+}
+
+export function exportCreditDebitNotePdf(data: CreditDebitNotePdfInput) {
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+  const isCredit = data.note.noteType === 'CREDIT';
+  const title = isCredit ? 'CREDIT NOTE (GST SECTION 34)' : 'DEBIT NOTE (GST SECTION 34)';
+  const themeColor: [number, number, number] = isCredit ? [220, 38, 38] : [2, 132, 199];
+
+  // Header band
+  doc.setFillColor(...themeColor);
+  doc.rect(0, 0, pageW, 20, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title, pageW / 2, 13, { align: 'center' });
+
+  // Company Details
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.company.name, 14, 30);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`GSTIN: ${data.company.gstin || '33AABCS1429B1ZB'}`, 14, 36);
+  doc.text(`Address: ${data.company.address || 'HQ Tech Tower, OMR, Chennai, India'}`, 14, 41);
+  doc.text(`Contact: ${data.company.email || 'billing@smartbooks.com'} · ${data.company.phone || '+91 98400 12345'}`, 14, 46);
+
+  // Note Info Card
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(pageW - 85, 25, 71, 32, 2, 2, 'FD');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Note #: ${data.note.noteNumber}`, pageW - 80, 32);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Date: ${data.note.issueDate}`, pageW - 80, 39);
+  doc.text(`Original Inv #: ${data.note.originalInvoiceNo || 'N/A'}`, pageW - 80, 46);
+  doc.text(`Reason: ${data.note.reason}`, pageW - 80, 53);
+
+  // Recipient Box
+  const billY = 62;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, billY, pageW - 28, 7, 'F');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('PARTY DETAILS / RECIPIENT', 18, billY + 5);
+
+  doc.setFontSize(10);
+  doc.text(data.customer.name, 18, billY + 14);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`GSTIN: ${data.customer.gstin || '33AAACN8123C1Z8'}`, 18, billY + 20);
+  doc.text(`Address: ${data.customer.address || 'Client Corporate Office, India'}`, 18, billY + 25);
+
+  // Adjustment Line Table
+  const tableY = billY + 32;
+  const isInterState = false;
+  const cgst = isInterState ? 0 : data.note.gstAmount / 2;
+  const sgst = isInterState ? 0 : data.note.gstAmount / 2;
+  const igst = isInterState ? data.note.gstAmount : 0;
+
+  autoTable(doc, {
+    startY: tableY,
+    head: [['Description / Reason for Adjustment', 'Taxable Value', 'GST Rate', 'CGST', 'SGST', 'IGST', 'Adjustment Total']],
+    body: [
+      [
+        `${data.note.reason} (Ref Inv: ${data.note.originalInvoiceNo || 'N/A'})`,
+        `₹${Number(data.note.taxableAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        `${data.note.gstRate}%`,
+        `₹${cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        `₹${sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        `₹${igst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        `₹${Number(data.note.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+      ],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: themeColor, textColor: 255, fontSize: 8.5 },
+    styles: { fontSize: 8.5, cellPadding: 3.5 },
+    columnStyles: {
+      1: { halign: 'right' },
+      2: { halign: 'center' },
+      3: { halign: 'right' },
+      4: { halign: 'right' },
+      5: { halign: 'right' },
+      6: { halign: 'right', fontStyle: 'bold' },
+    },
+  });
+
+  // Net Box
+  const netY = (doc as any).lastAutoTable.finalY + 8;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, netY, pageW - 28, 12, 'F');
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`TOTAL ${isCredit ? 'CREDIT' : 'DEBIT'} ADJUSTMENT:`, 18, netY + 8);
+  doc.setTextColor(...themeColor);
+  doc.text(`₹${Number(data.note.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, pageW - 18, netY + 8, { align: 'right' });
+
+  // In words
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Amount in Words: ${numberToIndianWords(Number(data.note.totalAmount))}`, 14, netY + 18);
+
+  // Statutory Footer
+  doc.text('Statutory Declaration: Issued in accordance with provisions of Section 34 of the CGST / SGST Act, 2017.', 14, netY + 28);
+  doc.text('Authorized Signatory', pageW - 55, netY + 45);
+  doc.line(pageW - 65, netY + 40, pageW - 14, netY + 40);
+
+  doc.save(`${isCredit ? 'CreditNote' : 'DebitNote'}_${data.note.noteNumber}.pdf`);
+}
+
+
 
