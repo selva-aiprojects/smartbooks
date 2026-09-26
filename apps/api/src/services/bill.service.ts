@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { recordAuditLog } from './audit.service';
 
 export async function getVendors(companyId: string) {
   return await prisma.vendor.findMany({
@@ -45,7 +46,7 @@ export async function createBill(data: {
   const totalAmount = taxableAmount + gstAmount;
   const effectiveGstRate = taxableAmount > 0 ? Math.round((gstAmount / taxableAmount) * 10000) / 100 : 0;
 
-  return await prisma.$transaction(async (tx) => {
+  const createdBill = await prisma.$transaction(async (tx) => {
     const vendor = await tx.vendor.findFirst({ where: { id: vendorId, companyId } });
     if (!vendor) {
       throw new Error('Vendor not found or does not belong to this company');
@@ -96,6 +97,19 @@ export async function createBill(data: {
 
     return bill;
   });
+
+  await recordAuditLog({
+    companyId,
+    userId: createdById,
+    action: 'CREATE',
+    entityType: 'BILL',
+    entityId: createdBill.id,
+    entityRef: createdBill.number,
+    details: `Created vendor bill #${createdBill.number} for ₹${Number(createdBill.totalAmount).toLocaleString('en-IN')}`,
+    newValues: { number: createdBill.number, totalAmount: createdBill.totalAmount, vendorId },
+  });
+
+  return createdBill;
 }
 
 async function postBillJournal(

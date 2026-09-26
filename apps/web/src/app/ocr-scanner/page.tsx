@@ -1,88 +1,78 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Paper, Button, Chip, Alert, LinearProgress, Card, CardContent, Divider, TextField, MenuItem, FormControl, InputLabel, Select, Snackbar } from '@mui/material';
-import { Scanner as OCRIcon, CloudUpload as UploadIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  Chip,
+  Alert,
+  LinearProgress,
+  Card,
+  CardContent,
+  Divider,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Stack
+} from '@mui/material';
+import {
+  Scanner as OCRIcon,
+  CloudUpload as UploadIcon,
+  CheckCircle as CheckIcon,
+  AutoAwesome as AIIcon,
+  ReceiptLong as ReceiptIcon,
+  HistoryEdu as GLIcon
+} from '@mui/icons-material';
 import { useTenant } from '../../context/TenantContext';
 import { getAuthHeaders } from '../../lib/api';
 
 interface ParsedLine {
   description: string;
+  hsnCode?: string | null;
+  quantity?: number;
+  unitPrice?: number;
   amount: number;
+  gstRate?: number;
+  gstAmount?: number;
 }
 
 interface ParsedResult {
   vendor: string;
+  vendorGstin?: string | null;
+  vendorAddress?: string | null;
   receiptNumber: string;
   date: string;
+  dueDate?: string;
+  isInterState?: boolean;
+  taxableAmount?: number;
+  gstRate?: number;
+  gstAmount?: number;
   totalAmount: number;
   detectedCategory: string;
   lineItems: ParsedLine[];
   confidence: number;
 }
 
-const CATEGORY_RULES: { label: string; match: string[]; code: string }[] = [
-  { label: 'Software & Cloud Infrastructure', match: ['aws', 'azure', 'google cloud', 'software', 'saas', 'cloud'], code: '5020' },
-  { label: 'Office Supplies', match: ['paper', 'office', 'stationery', 'supplies'], code: '5030' },
-  { label: 'Payroll & Salaries', match: ['salary', 'payroll', 'wages'], code: '5040' },
-  { label: 'Rent & Facility', match: ['rent', 'lease', 'facility'], code: '5050' },
-  { label: 'Raw Material & Inventory', match: ['steel', 'raw material', 'material', 'inventory'], code: '1700' },
-  { label: 'Travel & Transport', match: ['travel', 'cab', 'flight', 'hotel'], code: '5060' },
+const CATEGORIES = [
+  'Software & Cloud Infrastructure',
+  'Office Supplies',
+  'Payroll & Salaries',
+  'Rent & Facility',
+  'Raw Material & Inventory',
+  'Travel & Transport',
+  'Professional & Legal Fees',
+  'General Expense'
 ];
-
-function extractNumber(text: string): number {
-  const cleaned = text.replace(/[₹$,]/g, '').trim();
-  const match = cleaned.match(/-?\d+(?:\.\d+)?/);
-  return match ? parseFloat(match[0]) : 0;
-}
-
-function parseReceiptText(content: string): ParsedResult | null {
-  const vendor = content.match(/(?:^(?:vendor|supplier|from|billed by)\s*[:#]?\s*(.+)$)/im)?.[1]
-    || content.match(/^([A-Za-z][A-Za-z0-9 &.'-]{2,})$/m)?.[1]
-    || 'SmartBooks AI Detected Vendor';
-
-  const receiptNumber = content.match(/(?:invoice|receipt|bill|inv)(?:\s*(?:no|#|number))?\s*[:#]?\s*([A-Za-z0-9-]+)/i)?.[1] || `REC-${Date.now().toString().slice(-6)}`;
-
-  const dateMatch = content.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/);
-  const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-
-  const lines: ParsedLine[] = [];
-  const contentLines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-
-  contentLines.forEach((line) => {
-    const amountMatch = line.match(/(?:[-+]?\d+(?:\.\d{1,2})|\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?)/);
-    if (!amountMatch) return;
-    const desc = line.replace(amountMatch[0], '').replace(/[₹$,]/g, '').replace(/\s{2,}/g, ' ').trim();
-    if (!desc) return;
-    const amount = extractNumber(amountMatch[0]);
-    if (amount > 0 && desc.length > 2) {
-      lines.push({ description: desc, amount });
-    }
-  });
-
-  if (lines.length === 0 && extractNumber(content) > 0) {
-    lines.push({ description: 'Extracted line item', amount: extractNumber(content) });
-  }
-
-  const totalAmount = lines.reduce((s, l) => s + l.amount, 0) || extractNumber(content) || 0;
-
-  const lower = content.toLowerCase();
-  const detected = CATEGORY_RULES.find((c) => c.match.some((m) => lower.includes(m)));
-  const detectedCategory = detected ? detected.label : 'General Expense';
-  const confidence = detected ? 0.9 + Math.min(0.08, lines.length * 0.02) : 0.75;
-
-  return {
-    vendor: vendor.trim(),
-    receiptNumber,
-    date,
-    totalAmount,
-    detectedCategory,
-    lineItems: lines.slice(0, 12),
-    confidence: Math.min(confidence, 0.99),
-  };
-}
-
-const CATEGORIES = ['Software & Cloud Infrastructure', 'Office Supplies', 'Payroll & Salaries', 'Rent & Facility', 'Raw Material & Inventory', 'Travel & Transport', 'General Expense'];
 
 export default function OCRScannerPage() {
   const { activeTenant } = useTenant();
@@ -91,10 +81,11 @@ export default function OCRScannerPage() {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [category, setCategory] = useState('General Expense');
+  const [engineUsed, setEngineUsed] = useState('Google Gemini Flash Vision');
   const [posting, setPosting] = useState(false);
   const [snack, setSnack] = useState('');
 
-  const handleScanReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setError('');
@@ -102,28 +93,35 @@ export default function OCRScannerPage() {
     setScanning(true);
     setOcrResult(null);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setScanning(false);
-      const content = String(reader.result || '');
-      if (!content.trim()) {
-        setError('No extractable text found. Upload a text-based invoice (TXT/CSV/JSON) or a PDF with embedded text.');
-        return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/ocr/scan', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Scan extraction failed with HTTP ${res.status}`);
       }
-      const result = parseReceiptText(content);
-      if (result) {
-        setOcrResult(result);
-        setCategory(result.detectedCategory);
+
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setOcrResult(resData.data);
+        setCategory(resData.data.detectedCategory || 'General Expense');
+        setEngineUsed(resData.engine || 'Gemini Flash Vision');
       } else {
-        setError('Could not parse receipt. Check the file format.');
+        throw new Error(resData.error || 'Could not parse document data');
       }
-    };
-    reader.onerror = () => {
+    } catch (err: any) {
+      console.error('OCR scanning error:', err);
+      setError(err.message || 'Failed to process document with Vision AI. Please verify file format.');
+    } finally {
       setScanning(false);
-      setError('Failed to read the uploaded file.');
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+      e.target.value = '';
+    }
   };
 
   const handleDiscard = () => {
@@ -135,61 +133,85 @@ export default function OCRScannerPage() {
     if (!ocrResult) return;
     setPosting(true);
     try {
-      const res = await fetch('/api/invoices', {
+      const res = await fetch('/api/bills', {
         method: 'POST',
         headers: getAuthHeaders(true),
         body: JSON.stringify({
           vendorName: ocrResult.vendor,
+          vendorAddress: ocrResult.vendorAddress || null,
           number: ocrResult.receiptNumber,
           billDate: ocrResult.date,
+          dueDate: ocrResult.dueDate || ocrResult.date,
+          isInterState: !!ocrResult.isInterState,
           totalAmount: ocrResult.totalAmount,
-          category: category || 'General Expense',
-          items: ocrResult.lineItems.map((l) => ({ description: l.description, quantity: 1, unitPrice: l.amount })),
+          category: category || ocrResult.detectedCategory || 'General Expense',
+          items: ocrResult.lineItems.map((l) => ({
+            description: l.description,
+            hsnCode: l.hsnCode || null,
+            quantity: Number(l.quantity) || 1,
+            unitPrice: Number(l.unitPrice) || Number(l.amount),
+            amount: Number(l.amount),
+            gstRate: Number(l.gstRate) || 18,
+            gstAmount: Number(l.gstAmount) || 0,
+            category: category || 'Expense',
+          })),
         }),
       });
+
       if (res.ok) {
-        setSnack('Expense recorded & posted to General Ledger successfully!');
+        setSnack(`✅ Vendor Bill #${ocrResult.receiptNumber} successfully created & posted to General Ledger!`);
       } else {
         const data = await res.json();
-        setSnack(data.error || 'Expense posted successfully (demo).');
+        setSnack(data.error || 'Failed to post vendor bill');
       }
-    } catch (err) {
-      setSnack(`Posted to ${activeTenant?.name} GL locally (backend offline).`);
+    } catch (err: any) {
+      setSnack('Failed to record vendor bill');
     } finally {
       setPosting(false);
-      setTimeout(() => { setOcrResult(null); setFileName(''); }, 1200);
+      setTimeout(() => {
+        setOcrResult(null);
+        setFileName('');
+      }, 2500);
     }
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Box sx={{ flexGrow: 1, p: { xs: 1, md: 2 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <OCRIcon sx={{ fontSize: 36, color: '#8b5cf6' }} />
-            AI OCR Receipt & Bill Scanner
-            <Chip label="Enterprise / Premium Plan" color="secondary" size="small" />
-          </Typography>
+            <Typography variant="h4" fontWeight="800" sx={{ color: '#0f172a', letterSpacing: '-0.5px' }}>
+              Multimodal Vision AI Bill & Receipt Scanner
+            </Typography>
+            <Chip
+              icon={<AIIcon sx={{ fontSize: '16px !important' }} />}
+              label="Gemini Flash Vision Live"
+              color="secondary"
+              size="small"
+              sx={{ fontWeight: 700 }}
+            />
+          </Box>
           <Typography variant="body2" color="text.secondary">
-            Upload a text-based TXT/CSV/JSON invoice. SmartBooks parses line items, totals, vendor & date, then posts to GL automatically.
+            Upload photos, scans (PNG/JPG/PDF) or digital receipts. Google Gemini Vision extracts supplier details, GSTIN, line items, and auto-posts balanced journals.
           </Typography>
         </Box>
 
         <Button
           variant="contained"
-          color="secondary"
           component="label"
           startIcon={<UploadIcon />}
           size="large"
           disabled={scanning}
+          sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, fontWeight: 700, borderRadius: 2 }}
         >
-          Scan Receipt / Bill
-          <input type="file" accept=".txt,.csv,.json,text/plain,.pdf" hidden onChange={handleScanReceipt} />
+          {scanning ? 'Analyzing Document...' : 'Upload Receipt / Bill'}
+          <input type="file" accept="image/*,.pdf,.txt,.csv,.json" hidden onChange={handleScanReceipt} />
         </Button>
       </Box>
 
       {fileName && !ocrResult && !scanning && (
-        <Alert severity="success" sx={{ mb: 2 }}>Selected file: <strong>{fileName}</strong></Alert>
+        <Alert severity="info" sx={{ mb: 2 }}>Selected file: <strong>{fileName}</strong></Alert>
       )}
 
       {error && (
@@ -197,79 +219,168 @@ export default function OCRScannerPage() {
       )}
 
       {scanning && (
-        <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="body1" fontWeight="bold" gutterBottom>
-            SmartBooks AI Vision Engine is parsing {fileName || 'document'}...
-          </Typography>
-          <LinearProgress color="secondary" />
+        <Paper sx={{ p: 4, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+          <Stack spacing={2} alignItems="center">
+            <AIIcon sx={{ fontSize: 48, color: '#8b5cf6', animation: 'spin 2s linear infinite' }} />
+            <Typography variant="h6" fontWeight="bold">
+              Gemini Vision AI is extracting document structure from {fileName}...
+            </Typography>
+            <Typography variant="body2" color="text.secondary" maxWidth={600}>
+              Detecting vendor GSTIN, line items, taxable amounts, CGST/SGST/IGST splits, and recommending Chart of Accounts codes.
+            </Typography>
+            <Box sx={{ width: '100%', maxWidth: 500 }}>
+              <LinearProgress color="secondary" sx={{ height: 8, borderRadius: 4 }} />
+            </Box>
+          </Stack>
         </Paper>
       )}
 
       {ocrResult && (
-        <Card sx={{ borderRadius: 3, borderLeft: '6px solid #8b5cf6' }}>
-          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Card sx={{ borderRadius: 3, borderLeft: '6px solid #8b5cf6', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.06)' }}>
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
               <Box>
-                <Typography variant="h5" fontWeight="bold">Extracted Receipt Data</Typography>
-                <Typography variant="caption" color="text.secondary">from {fileName}</Typography>
+                <Typography variant="h5" fontWeight="800" color="#0f172a">
+                  Extracted Document Intelligence
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Source: {fileName} • Engine: <strong>{engineUsed}</strong>
+                </Typography>
               </Box>
-              <Chip icon={<CheckIcon />} label={`${Math.round(ocrResult.confidence * 100)}% AI Confidence`} color="success" />
+              <Chip
+                icon={<CheckIcon sx={{ fontSize: '16px !important' }} />}
+                label={`${Math.round(ocrResult.confidence * 100)}% Vision Confidence`}
+                color="success"
+                sx={{ fontWeight: 700 }}
+              />
             </Box>
 
             <Divider />
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
-              <Box>
-                <Typography color="text.secondary" variant="caption">Detected Vendor</Typography>
-                <Typography fontWeight="bold" variant="body1">{ocrResult.vendor}</Typography>
+            {/* Extracted Metadata Grid */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2.5 }}>
+              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <Typography color="text.secondary" variant="caption" fontWeight="700">DETECTED VENDOR</Typography>
+                <Typography fontWeight="800" variant="body1" color="#0f172a">{ocrResult.vendor}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  GSTIN: {ocrResult.vendorGstin || 'Not detected'}
+                </Typography>
               </Box>
-              <Box>
-                <Typography color="text.secondary" variant="caption">Receipt / Invoice #</Typography>
-                <Typography fontWeight="bold" variant="body1">{ocrResult.receiptNumber}</Typography>
+
+              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <Typography color="text.secondary" variant="caption" fontWeight="700">INVOICE / BILL #</Typography>
+                <Typography fontWeight="800" variant="body1" color="#8b5cf6">{ocrResult.receiptNumber}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Place: {ocrResult.isInterState ? 'Inter-State (IGST)' : 'Intra-State (CGST+SGST)'}
+                </Typography>
               </Box>
-              <Box>
-                <Typography color="text.secondary" variant="caption">Date</Typography>
-                <Typography fontWeight="bold" variant="body1">{ocrResult.date}</Typography>
+
+              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <Typography color="text.secondary" variant="caption" fontWeight="700">DOCUMENT DATE</Typography>
+                <Typography fontWeight="800" variant="body1" color="#0f172a">{ocrResult.date}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Due: {ocrResult.dueDate || ocrResult.date}
+                </Typography>
               </Box>
-              <Box>
-                <Typography color="text.secondary" variant="caption">Total Extracted Amount</Typography>
-                <Typography fontWeight="bold" variant="h6" color="secondary.main">₹{ocrResult.totalAmount.toLocaleString('en-IN')}</Typography>
+
+              <Box sx={{ p: 1.5, bgcolor: '#f5f3ff', borderRadius: 2, border: '1px solid #ddd6fe' }}>
+                <Typography color="secondary.main" variant="caption" fontWeight="700">TOTAL EXTRACTED VALUE</Typography>
+                <Typography fontWeight="800" variant="h5" color="secondary.main">
+                  ₹{Number(ocrResult.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Tax: ₹{Number(ocrResult.gstAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </Typography>
               </Box>
             </Box>
 
             <Divider />
 
-            <Typography variant="h6" fontWeight="bold">Extracted Line Items</Typography>
-            {ocrResult.lineItems.length > 0 ? (
-              ocrResult.lineItems.map((item, idx) => (
-                <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5, bgcolor: '#f8fafc', borderRadius: 1 }}>
-                  <Typography variant="body2">{item.description}</Typography>
-                  <Typography variant="body2" fontWeight="bold">₹{item.amount.toLocaleString('en-IN')}</Typography>
-                </Box>
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">No line items detected at line level.</Typography>
-            )}
+            {/* Extracted Line Items Table */}
+            <Typography variant="subtitle1" fontWeight="800" color="#0f172a">
+              Itemized Line Items ({ocrResult.lineItems.length})
+            </Typography>
 
-            <FormControl fullWidth sx={{ mt: 1 }}>
-              <InputLabel>Assign GL Expense Category</InputLabel>
-              <Select value={category} label="Assign GL Expense Category" onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-              </Select>
-            </FormControl>
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: '#f1f5f9' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>HSN/SAC</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Qty</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Unit Price (₹)</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>GST %</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Total (₹)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {ocrResult.lineItems.length > 0 ? (
+                    ocrResult.lineItems.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell sx={{ fontWeight: 600 }}>{item.description}</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{item.hsnCode || '-'}</TableCell>
+                        <TableCell align="center">{item.quantity || 1}</TableCell>
+                        <TableCell align="right">₹{Number(item.unitPrice || item.amount).toLocaleString('en-IN')}</TableCell>
+                        <TableCell align="right">{item.gstRate || 18}%</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          ₹{Number(item.amount + (item.gstAmount || 0)).toLocaleString('en-IN')}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} sx={{ color: 'text.secondary', textAlign: 'center', py: 2 }}>
+                        No specific line items detected. Bill will be recorded as a lump-sum expense.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-              <Button variant="outlined" onClick={handleDiscard}>Discard</Button>
-              <Button variant="contained" color="secondary" onClick={handlePost} disabled={posting}>
-                {posting ? 'Posting to Journal...' : 'Confirm & Auto-Post to Journal'}
+            {/* General Ledger Expense Category Mapping */}
+            <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+              <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 1 }}>
+                General Ledger Account Classification
+              </Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel>Chart of Accounts Category</InputLabel>
+                <Select
+                  value={category}
+                  label="Chart of Accounts Category"
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Auto-assigned by AI based on vendor profile and line-item semantics.
+              </Typography>
+            </Box>
+
+            {/* Action Bar */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 1 }}>
+              <Button variant="outlined" onClick={handleDiscard} disabled={posting}>
+                Discard
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<GLIcon />}
+                onClick={handlePost}
+                disabled={posting}
+                sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, fontWeight: 700 }}
+              >
+                {posting ? 'Creating Bill & Posting GL...' : 'Approve & Create Vendor Bill'}
               </Button>
             </Box>
           </CardContent>
         </Card>
       )}
 
-      <Snackbar open={!!snack} autoHideDuration={3000} onClose={() => setSnack('')}>
-        <Alert onClose={() => setSnack('')} severity="success" sx={{ width: '100%' }}>{snack}</Alert>
+      <Snackbar open={!!snack} autoHideDuration={4000} onClose={() => setSnack('')}>
+        <Alert onClose={() => setSnack('')} severity="success" sx={{ width: '100%', fontWeight: 600 }}>
+          {snack}
+        </Alert>
       </Snackbar>
     </Box>
   );

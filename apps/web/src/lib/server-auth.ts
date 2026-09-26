@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 export interface AuthPayload {
   userId: string;
   companyId: string;
+  email?: string;
+  name?: string;
 }
 
 export async function getAuthUser(req: Request): Promise<AuthPayload | null> {
@@ -44,3 +46,5 @@ export async function getAuthUser(req: Request): Promise<AuthPayload | null> {
     return null;
   }
 }
+
+export const getAuthUserFromRequest = getAuthUser;

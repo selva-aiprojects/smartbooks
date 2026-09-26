@@ -60,7 +60,9 @@ import {
   HomeWork as GatewayIcon,
   MenuBook as DayBookIcon,
   AccountBalanceWallet as LedgerIcon,
-  SwapHoriz as VoucherIcon
+  SwapHoriz as VoucherIcon,
+  History as HistoryIcon,
+  Sync as SyncIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -93,6 +95,7 @@ const registerItems = [
 
 const statutoryItems = [
   { label: 'GST & Statutory', path: '/tax', icon: <TaxIcon /> },
+  { label: 'Audit Trail', path: '/audit-trail', icon: <HistoryIcon /> },
   { label: 'Bank Reconciliation', path: '/reconciliation', icon: <ReconciliationIcon /> },
 ];
 
@@ -102,6 +105,7 @@ const reportItems = [
 
 const advancedItems = [
   { label: 'Stock / Inventory', path: '/inventory', icon: <InventoryIcon /> },
+  { label: 'Data Import (CSV/Excel)', path: '/import', icon: <SyncIcon /> },
   { label: 'AI Assistant', path: '/ai-assistant', icon: <AIIcon /> },
   { label: 'OCR Receipt Scanner', path: '/ocr-scanner', icon: <OCRIcon /> },
   { label: 'Financial Forecasting', path: '/forecasting', icon: <ForecastIcon /> },

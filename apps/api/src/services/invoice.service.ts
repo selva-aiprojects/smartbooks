@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { recordAuditLog } from './audit.service';
 
 export async function getCustomers(companyId: string) {
   return await prisma.customer.findMany({
@@ -45,7 +46,7 @@ export async function createInvoice(data: {
   const totalAmount = taxableAmount + gstAmount;
   const effectiveGstRate = taxableAmount > 0 ? Math.round((gstAmount / taxableAmount) * 10000) / 100 : 0;
 
-  return await prisma.$transaction(async (tx) => {
+  const createdInvoice = await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.findFirst({ where: { id: customerId, companyId } });
     if (!customer) {
       throw new Error('Customer not found or does not belong to this company');
@@ -98,6 +99,19 @@ export async function createInvoice(data: {
 
     return invoice;
   });
+
+  await recordAuditLog({
+    companyId,
+    userId: createdById,
+    action: 'CREATE',
+    entityType: 'INVOICE',
+    entityId: createdInvoice.id,
+    entityRef: createdInvoice.number,
+    details: `Created customer invoice #${createdInvoice.number} for ₹${Number(createdInvoice.totalAmount).toLocaleString('en-IN')}`,
+    newValues: { number: createdInvoice.number, totalAmount: createdInvoice.totalAmount, customerId },
+  });
+
+  return createdInvoice;
 }
 
 async function deductInventory(
@@ -253,6 +267,19 @@ export async function recordInvoicePayment(
 
     return { payment, invoice: updated };
   });
+
+  await recordAuditLog({
+    companyId,
+    userId,
+    action: 'PAYMENT',
+    entityType: 'INVOICE',
+    entityId: id,
+    entityRef: result.invoice?.number,
+    details: `Recorded payment of ₹${Number(result.payment.amount).toLocaleString('en-IN')} via ${result.payment.method} for Invoice #${result.invoice?.number}`,
+    newValues: { amount: result.payment.amount, method: result.payment.method },
+  });
+
+  return result;
 }
 
 export async function updateInvoiceStatus(id: string, status: string, companyId: string, userId: string) {
@@ -273,7 +300,7 @@ export async function updateInvoiceStatus(id: string, status: string, companyId:
   }
 
   if (status === 'Paid') {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.update({
         where: { id },
         data: { status },
@@ -305,11 +332,39 @@ export async function updateInvoiceStatus(id: string, status: string, companyId:
 
       return invoice;
     });
+
+    await recordAuditLog({
+      companyId,
+      userId,
+      action: 'STATUS_CHANGE',
+      entityType: 'INVOICE',
+      entityId: id,
+      entityRef: existing.number,
+      details: `Updated Invoice #${existing.number} status from ${existing.status} to Paid`,
+      oldValues: { status: existing.status },
+      newValues: { status: 'Paid' },
+    });
+
+    return result;
   }
 
-  return await prisma.invoice.update({
+  const updated = await prisma.invoice.update({
     where: { id },
     data: { status },
     include: { customer: true, items: true }
   });
+
+  await recordAuditLog({
+    companyId,
+    userId,
+    action: 'STATUS_CHANGE',
+    entityType: 'INVOICE',
+    entityId: id,
+    entityRef: existing.number,
+    details: `Updated Invoice #${existing.number} status from ${existing.status} to ${status}`,
+    oldValues: { status: existing.status },
+    newValues: { status },
+  });
+
+  return updated;
 }

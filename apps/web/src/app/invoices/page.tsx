@@ -18,9 +18,11 @@ import {
   MenuItem
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon } from '@mui/icons-material';
+import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
+import { useTenant } from '../../context/TenantContext';
+import { exportTaxInvoicePdf } from '../../lib/pdf-generator';
 
 const columns: GridColDef[] = [
   { field: 'number', headerName: 'Invoice #', width: 140 },
@@ -79,7 +81,9 @@ const mockInvoices = [
 ];
 
 export default function InvoicesPage() {
+  const { activeTenant } = useTenant();
   const [rows, setRows] = useState<any[]>(mockInvoices);
+  const [rawInvoices, setRawInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCustomerModal, setOpenCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
@@ -96,6 +100,7 @@ export default function InvoicesPage() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
+          setRawInvoices(data);
           setRows(data.map((item: any) => ({
               id: item.id,
               number: item.number,
@@ -115,6 +120,68 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadInvoicePdf = (row: any) => {
+    const raw = rawInvoices.find((i) => i.id === row.id) || row;
+    exportTaxInvoicePdf({
+      company: {
+        name: activeTenant?.name || 'SmartBooks Enterprise Ltd.',
+        gstin: activeTenant?.gstin || '33AABCS1429B1ZB',
+        address: 'HQ Tower, Tech Corridor, OMR, Chennai, TN - 600096',
+        email: activeTenant?.contactEmail || 'billing@smartbooks.com',
+        phone: activeTenant?.contactPhone || '+91 98400 12345',
+      },
+      customer: {
+        name: raw.customer?.name || row.customerName || 'Client Customer',
+        gstin: raw.customer?.gstin || '33AAACN8123C1Z8',
+        address: raw.customer?.address || 'Client Corporate Office, India',
+        state: 'Tamil Nadu (33)',
+      },
+      invoice: {
+        number: raw.number || row.number,
+        issueDate: raw.issueDate || row.issueDate,
+        dueDate: raw.dueDate || row.dueDate,
+        isInterState: !!raw.isInterState,
+        taxableAmount: Number(raw.taxableAmount || row.taxableAmount),
+        gstAmount: Number(raw.gstAmount || row.gstAmount),
+        totalAmount: Number(raw.totalAmount || row.totalAmount),
+        status: raw.status || row.status,
+        items: (raw.items && raw.items.length > 0)
+          ? raw.items.map((it: any) => ({
+              description: it.description || 'Professional Services',
+              hsnCode: it.hsnCode || '998313',
+              quantity: Number(it.quantity) || 1,
+              unitPrice: Number(it.unitPrice) || Number(it.amount),
+              amount: Number(it.amount),
+              gstRate: Number(it.gstRate) || 18,
+              gstAmount: Number(it.gstAmount) || (Number(it.amount) * 0.18),
+            }))
+          : [
+              {
+                description: 'Enterprise Accounting & Subscription Services',
+                hsnCode: '998313',
+                quantity: 1,
+                unitPrice: Number(row.taxableAmount),
+                amount: Number(row.taxableAmount),
+                gstRate: Math.round(((Number(row.gstAmount) || 0) / (Number(row.taxableAmount) || 1)) * 100),
+                gstAmount: Number(row.gstAmount),
+              },
+            ],
+      },
+    });
+
+    fetch('/api/audit-trail', {
+      method: 'POST',
+      headers: getAuthHeaders(true),
+      body: JSON.stringify({
+        action: 'EXPORT',
+        entityType: 'INVOICE',
+        entityId: row.id,
+        entityRef: row.number,
+        details: `Exported GST Tax Invoice PDF for #${row.number}`,
+      }),
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -214,18 +281,30 @@ export default function InvoicesPage() {
           columns={[
             ...columns,
             {
-              field: 'recordPayment',
+              field: 'actions',
               headerName: 'Actions',
-              width: 140,
+              width: 230,
               sortable: false,
-              renderCell: (params) =>
-                params.row.status !== 'Paid' && params.row.status !== 'Void' ? (
-                  <Button size="small" variant="outlined" startIcon={<PaymentsIcon />} onClick={() => openPayment(params.row)}>
-                    Record Payment
+              renderCell: (params) => (
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<PdfIcon />}
+                    onClick={() => handleDownloadInvoicePdf(params.row)}
+                  >
+                    PDF
                   </Button>
-                ) : (
-                  <Chip label="Paid" color="success" size="small" />
-                )
+                  {params.row.status !== 'Paid' && params.row.status !== 'Void' ? (
+                    <Button size="small" variant="contained" color="secondary" startIcon={<PaymentsIcon />} onClick={() => openPayment(params.row)}>
+                      Pay
+                    </Button>
+                  ) : (
+                    <Chip label="Paid" color="success" size="small" />
+                  )}
+                </Box>
+              )
             }
           ]}
           pageSizeOptions={[5, 10, 25]}

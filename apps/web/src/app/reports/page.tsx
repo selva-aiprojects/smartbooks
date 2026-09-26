@@ -9,6 +9,7 @@ import {
 import { Download as DownloadIcon, Print as PrintIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { getAuthHeaders } from '../../lib/api';
 import { useTenant } from '../../context/TenantContext';
+import { exportReportPdf } from '../../lib/pdf-generator';
 
 interface TBRow { code: string; name: string; type: string; debit: number; credit: number; }
 
@@ -146,7 +147,61 @@ export default function FinancialReportsPage() {
   const tbTotalDebit = trialBalance ? trialBalance.reduce((s, r) => s + r.debit, 0) : 0;
   const tbTotalCredit = trialBalance ? trialBalance.reduce((s, r) => s + r.credit, 0) : 0;
 
-  const handleExport = () => alert('Report downloaded successfully!');
+  const handleExport = () => {
+    const compName = activeTenant?.name || 'SmartBooks Enterprise';
+    if (tabValue === 0) {
+      const revItems = (pnl ? pnl.revenue : demoIncome.revenue).map(r => ({ code: r.code, name: r.name, amount: r.amount }));
+      const expItems = (pnl ? pnl.expenses : demoIncome.expenses).map(e => ({ code: e.code, name: e.name, amount: Math.abs(e.amount) }));
+      exportReportPdf({
+        reportTitle: 'Profit & Loss Statement',
+        companyName: compName,
+        dateRange: `${fromDate} to ${toDate}`,
+        sections: [
+          { title: 'Operating Revenue', items: revItems, subtotal: totalRevenue },
+          { title: 'Operating Expenses', items: expItems, subtotal: totalExpenses },
+        ],
+        netTotal: { label: 'Net Profit / (Loss)', amount: netProfit },
+      });
+    } else if (tabValue === 1) {
+      exportReportPdf({
+        reportTitle: 'Balance Sheet',
+        companyName: compName,
+        dateRange: `As of ${toDate}`,
+        sections: [
+          { title: 'Assets', items: balanceAssetRows.map(a => ({ code: a.code, name: a.name, amount: Math.abs(a.amount) })), subtotal: totalAssets },
+          { title: 'Liabilities', items: balanceLiabilityRows.map(l => ({ code: l.code, name: l.name, amount: Math.abs(l.amount) })), subtotal: totalLiabilities },
+          { title: 'Owner Equity', items: balanceEquityRows.map(e => ({ code: e.code, name: e.name, amount: Math.abs(e.amount) })), subtotal: totalEquity },
+        ],
+        netTotal: { label: 'Total Liabilities & Equity', amount: totalLiabilities + totalEquity },
+      });
+    } else if (tabValue === 2) {
+      const rows = trialBalance || [];
+      exportReportPdf({
+        reportTitle: 'Trial Balance',
+        companyName: compName,
+        dateRange: `As of ${toDate}`,
+        sections: [
+          { title: 'Debit Balances', items: rows.filter(r => r.debit > 0).map(r => ({ code: r.code, name: r.name, amount: r.debit })), subtotal: tbTotalDebit },
+          { title: 'Credit Balances', items: rows.filter(r => r.credit > 0).map(r => ({ code: r.code, name: r.name, amount: r.credit })), subtotal: tbTotalCredit },
+        ],
+        netTotal: { label: 'Trial Balance Differential', amount: tbTotalDebit - tbTotalCredit },
+      });
+    } else {
+      window.print();
+    }
+
+    fetch('/api/audit-trail', {
+      method: 'POST',
+      headers: getAuthHeaders(true),
+      body: JSON.stringify({
+        action: 'EXPORT',
+        entityType: 'REPORT',
+        entityId: `REP-${tabValue}`,
+        entityRef: tabValue === 0 ? 'P&L' : tabValue === 1 ? 'Balance Sheet' : 'Trial Balance',
+        details: `Exported financial report PDF for period ${fromDate} to ${toDate}`,
+      }),
+    }).catch(() => {});
+  };
 
   const toggleAccount = (code: string) => {
     setExpandedAccounts((prev) => {

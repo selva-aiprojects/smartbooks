@@ -73,6 +73,8 @@ export interface Tenant {
   nextBillingDate?: string;
   subscriptionStatus?: 'Active' | 'Past Due' | 'Trial';
   entityName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   metrics: TenantMetrics;
   users: TenantUser[];
   entities?: TenantEntity[];
