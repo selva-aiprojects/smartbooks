@@ -18,7 +18,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon, PictureAsPdf as PdfIcon, QrCode as QrCodeIcon, CheckCircle as VerifiedIcon } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
 import { useTenant } from '../../context/TenantContext';
@@ -108,6 +108,7 @@ export default function InvoicesPage() {
               issueDate: item.issueDate ? new Date(item.issueDate).toISOString().split('T')[0] : '',
               dueDate: item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '',
               status: item.status,
+              irn: item.irn,
               taxableAmount: item.taxableAmount,
               gstAmount: item.gstAmount,
               totalAmount: item.totalAmount,
@@ -119,6 +120,24 @@ export default function InvoicesPage() {
       console.error('Error fetching invoices:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateEInvoice = async (row: any) => {
+    try {
+      const res = await fetch(`/api/invoices/${row.id}/e-invoice`, {
+        method: 'POST',
+        headers: getAuthHeaders(true),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(`Official IRP e-Invoice IRN Generated!\nIRN: ${data.irn.slice(0, 32)}...\nAck #: ${data.ackNo}`);
+        await loadInvoices();
+      } else {
+        alert(data.error || 'Failed to generate e-Invoice');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Network error generating e-Invoice');
     }
   };
 
@@ -147,6 +166,9 @@ export default function InvoicesPage() {
         gstAmount: Number(raw.gstAmount || row.gstAmount),
         totalAmount: Number(raw.totalAmount || row.totalAmount),
         status: raw.status || row.status,
+        irn: raw.irn || row.irn,
+        ackNo: raw.ackNo || row.ackNo,
+        ackDate: raw.ackDate ? new Date(raw.ackDate).toLocaleString('en-IN') : null,
         items: (raw.items && raw.items.length > 0)
           ? raw.items.map((it: any) => ({
               description: it.description || 'Professional Services',
@@ -281,9 +303,21 @@ export default function InvoicesPage() {
           columns={[
             ...columns,
             {
+              field: 'irn',
+              headerName: 'e-Invoice (IRP)',
+              width: 140,
+              renderCell: (params) => params.value ? (
+                <Chip icon={<VerifiedIcon sx={{ fontSize: '14px !important' }} />} label="IRN Active" color="success" size="small" variant="outlined" />
+              ) : (
+                <Button size="small" variant="text" color="info" startIcon={<QrCodeIcon />} onClick={() => handleGenerateEInvoice(params.row)}>
+                  Get IRN
+                </Button>
+              )
+            },
+            {
               field: 'actions',
               headerName: 'Actions',
-              width: 230,
+              width: 200,
               sortable: false,
               renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>

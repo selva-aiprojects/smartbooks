@@ -62,7 +62,9 @@ import {
   AccountBalanceWallet as LedgerIcon,
   SwapHoriz as VoucherIcon,
   History as HistoryIcon,
-  Sync as SyncIcon
+  Sync as SyncIcon,
+  LocalShipping as TruckIcon,
+  Badge as PayrollIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -90,11 +92,14 @@ const booksItems = [
 const registerItems = [
   { label: 'Customer Invoices', path: '/invoices', icon: <InvoicesIcon /> },
   { label: 'Vendor Bills', path: '/bills', icon: <BillsIcon /> },
+  { label: 'e-Way Bills', path: '/e-way-bills', icon: <TruckIcon /> },
   { label: 'Cash / Bank & Payments', path: '/payments', icon: <PaymentsIcon /> },
 ];
 
 const statutoryItems = [
   { label: 'GST & Statutory', path: '/tax', icon: <TaxIcon /> },
+  { label: 'TDS / TCS Compliance', path: '/tds', icon: <TaxIcon /> },
+  { label: 'Payroll & Salary Slips', path: '/payroll', icon: <PayrollIcon /> },
   { label: 'Audit Trail', path: '/audit-trail', icon: <HistoryIcon /> },
   { label: 'Bank Reconciliation', path: '/reconciliation', icon: <ReconciliationIcon /> },
 ];

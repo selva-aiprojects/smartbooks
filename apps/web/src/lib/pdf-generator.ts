@@ -44,6 +44,9 @@ export interface TaxInvoicePdfInput {
     gstAmount: number;
     totalAmount: number;
     status: string;
+    irn?: string | null;
+    ackNo?: string | null;
+    ackDate?: string | null;
     items: Array<{
       description: string;
       hsnCode?: string | null;
@@ -71,11 +74,29 @@ export function exportTaxInvoicePdf(data: TaxInvoicePdfInput) {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('(Issued under Section 31 of CGST Act, 2017)', 62, 16);
+  doc.text(data.invoice.irn ? '(NIC e-Invoice Portal Verified)' : '(Issued under Section 31 of CGST Act, 2017)', 62, 16);
   doc.text('ORIGINAL FOR RECIPIENT', pageW - 60, 16);
 
+  // e-Invoice IRN details bar if present
+  let topOffset = 0;
+  if (data.invoice.irn) {
+    doc.setFillColor(243, 244, 246);
+    doc.rect(14, 28, pageW - 28, 8, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('IRN:', 16, 33.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(data.invoice.irn, 26, 33.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(2, 132, 199);
+    doc.text(`Ack #${data.invoice.ackNo || '-'}`, pageW - 48, 33.5);
+    topOffset = 10;
+  }
+
   // Supplier Details (Left)
-  let y = 35;
+  let y = 35 + topOffset;
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
@@ -99,7 +120,7 @@ export function exportTaxInvoicePdf(data: TaxInvoicePdfInput) {
 
   // Invoice Details (Right Box)
   const rightX = pageW - 80;
-  let ry = 35;
+  let ry = 35 + topOffset;
   doc.setFillColor(241, 245, 249);
   doc.roundedRect(rightX - 4, ry - 5, 70, 26, 2, 2, 'F');
 
@@ -423,3 +444,242 @@ export function exportReportPdf(options: {
 
   doc.save(`${options.reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
+
+export function exportEWayBillPdf(ewb: {
+  ewbNumber: string;
+  ewbDate: string;
+  validUpto: string;
+  docNo: string;
+  docDate: string;
+  fromGstin: string;
+  fromAddress: string;
+  toGstin: string;
+  toAddress: string;
+  totalValue: number;
+  transporterName?: string | null;
+  transporterId?: string | null;
+  vehicleNo?: string | null;
+  transMode?: string | null;
+  distanceKm: number;
+}) {
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GOVERNMENT OF INDIA — e-WAY BILL SLIP', 14, 14);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Rule 138 of CGST Rules, 2017', pageW - 65, 14);
+
+  // EWB Header Details
+  let y = 32;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, y, pageW - 28, 16, 'F');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('e-Way Bill No:', 18, y + 6);
+  doc.setTextColor(2, 132, 199);
+  doc.text(ewb.ewbNumber, 48, y + 6);
+
+  doc.setTextColor(15, 23, 42);
+  doc.text('Generated Date:', 100, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(new Date(ewb.ewbDate).toLocaleString('en-IN'), 130, y + 6);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Valid Until:', 18, y + 12);
+  doc.setTextColor(16, 185, 129);
+  doc.text(new Date(ewb.validUpto).toLocaleString('en-IN'), 48, y + 12);
+
+  // PART-A Table
+  y += 24;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('PART-A (Consignment Details)', 14, y);
+
+  autoTable(doc, {
+    startY: y + 4,
+    body: [
+      ['GSTIN of Supplier', ewb.fromGstin, 'Dispatch From Address', ewb.fromAddress],
+      ['GSTIN of Recipient', ewb.toGstin, 'Delivery To Address', ewb.toAddress],
+      ['Document No.', ewb.docNo, 'Document Date', new Date(ewb.docDate).toLocaleDateString('en-IN')],
+      ['Total Invoice Value', `₹${Number(ewb.totalValue).toLocaleString('en-IN')}`, 'Approx Distance', `${ewb.distanceKm} KM`],
+      ['HSN Code', '998313 / Standard Goods', 'Transaction Type', 'Regular Outward Supply']
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 40, fillColor: [248, 250, 252] },
+      1: { cellWidth: 55 },
+      2: { fontStyle: 'bold', cellWidth: 40, fillColor: [248, 250, 252] },
+      3: { cellWidth: 47 }
+    }
+  });
+
+  // PART-B Table
+  const partBY = (doc as any).lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('PART-B (Transportation Details)', 14, partBY);
+
+  autoTable(doc, {
+    startY: partBY + 4,
+    head: [['Mode', 'Vehicle No / Doc No', 'From Location', 'Entered Date', 'Transporter Name & ID']],
+    body: [
+      [
+        ewb.transMode || 'Road',
+        ewb.vehicleNo || 'TN-09-CB-9842',
+        ewb.fromAddress.split(',')[0],
+        new Date(ewb.ewbDate).toLocaleDateString('en-IN'),
+        `${ewb.transporterName || 'Direct Transport'} (${ewb.transporterId || 'Self'})`
+      ]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [15, 23, 42], fontSize: 8.5 },
+    styles: { fontSize: 8.5, cellPadding: 2.5 }
+  });
+
+  const finalNoteY = (doc as any).lastAutoTable.finalY + 12;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 116, 139);
+  doc.text('Note: This document is electronically generated under GST Rule 138 and does not require a physical signature.', 14, finalNoteY);
+
+  doc.save(`eWayBill_${ewb.ewbNumber}.pdf`);
+}
+
+export function exportSalarySlipPdf(data: {
+  companyName: string;
+  companyGstin: string;
+  employee: {
+    name: string;
+    employeeCode: string;
+    designation: string;
+    department: string;
+    pan?: string | null;
+    uan?: string | null;
+    bankAccount?: string | null;
+    bankIfsc?: string | null;
+  };
+  slip: {
+    month: number;
+    year: number;
+    basicPay: number;
+    hra: number;
+    allowances: number;
+    grossSalary: number;
+    pfDeduction: number;
+    esiDeduction: number;
+    professionalTax: number;
+    netSalary: number;
+    paymentDate?: string | null;
+  };
+}) {
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+  const months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthName = months[data.slip.month] || 'Month';
+
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`PAYSLIP FOR ${monthName.toUpperCase()} ${data.slip.year}`, 14, 14);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('CONFIDENTIAL • EMPLOYEE COPY', pageW - 65, 14);
+
+  // Company Details
+  let y = 30;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.companyName, 14, y);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`GSTIN: ${data.companyGstin} | Registered Office: Chennai, India`, 14, y + 5);
+
+  // Employee Information Grid
+  y += 12;
+  autoTable(doc, {
+    startY: y,
+    body: [
+      ['Employee Name', data.employee.name, 'Employee Code', data.employee.employeeCode],
+      ['Designation', data.employee.designation, 'Department', data.employee.department],
+      ['PAN Number', data.employee.pan || 'PANNOTAVBL', 'UAN (EPF)', data.employee.uan || '101294819201'],
+      ['Bank Account', data.employee.bankAccount || '5010048192012', 'Bank IFSC', data.employee.bankIfsc || 'HDFC0001234']
+    ],
+    theme: 'grid',
+    styles: { fontSize: 8.5, cellPadding: 2 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 35, fillColor: [248, 250, 252] },
+      1: { cellWidth: 55 },
+      2: { fontStyle: 'bold', cellWidth: 35, fillColor: [248, 250, 252] },
+      3: { cellWidth: 57 }
+    }
+  });
+
+  // Earnings & Deductions Table
+  const tableY = (doc as any).lastAutoTable.finalY + 8;
+  const totalDeductions = Number(data.slip.pfDeduction) + Number(data.slip.esiDeduction) + Number(data.slip.professionalTax);
+
+  autoTable(doc, {
+    startY: tableY,
+    head: [['Earnings', 'Amount (₹)', 'Deductions', 'Amount (₹)']],
+    body: [
+      ['Basic Salary', `₹${Number(data.slip.basicPay).toLocaleString('en-IN')}`, 'Provident Fund (EPF 12%)', `₹${Number(data.slip.pfDeduction).toLocaleString('en-IN')}`],
+      ['House Rent Allowance (HRA)', `₹${Number(data.slip.hra).toLocaleString('en-IN')}`, 'Employee State Insurance (ESI)', `₹${Number(data.slip.esiDeduction).toLocaleString('en-IN')}`],
+      ['Special Allowances', `₹${Number(data.slip.allowances).toLocaleString('en-IN')}`, 'Professional Tax (PT)', `₹${Number(data.slip.professionalTax).toLocaleString('en-IN')}`],
+      ['Gross Earnings', `₹${Number(data.slip.grossSalary).toLocaleString('en-IN')}`, 'Total Deductions', `₹${Number(totalDeductions).toLocaleString('en-IN')}`]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [15, 23, 42], fontSize: 8.5 },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    columnStyles: {
+      1: { halign: 'right', fontStyle: 'bold' },
+      3: { halign: 'right', fontStyle: 'bold' }
+    }
+  });
+
+  // Net Pay Box
+  const netY = (doc as any).lastAutoTable.finalY + 8;
+  doc.setFillColor(241, 245, 249);
+  doc.rect(14, netY, pageW - 28, 12, 'F');
+  doc.setFontSize(10.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('NET SALARY PAYABLE (TAKE-HOME):', 18, netY + 8);
+  doc.setTextColor(2, 132, 199);
+  doc.text(`₹${Number(data.slip.netSalary).toLocaleString('en-IN')}`, pageW - 18, netY + 8, { align: 'right' });
+
+  // In words
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Amount in Words: ${numberToIndianWords(Number(data.slip.netSalary))}`, 14, netY + 18);
+
+  const signY = netY + 35;
+  doc.setDrawColor(203, 213, 225);
+  doc.line(14, signY, 65, signY);
+  doc.line(pageW - 65, signY, pageW - 14, signY);
+
+  doc.setFontSize(8);
+  doc.text('Employee Signature', 18, signY + 5);
+  doc.text('Authorized Signatory', pageW - 55, signY + 5);
+
+  doc.save(`Payslip_${data.employee.employeeCode}_${monthName}_${data.slip.year}.pdf`);
+}
+
+

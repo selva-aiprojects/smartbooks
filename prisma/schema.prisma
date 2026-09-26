@@ -41,6 +41,10 @@ model Company {
   taxRates          TaxRate[]
   items             Item[]
   auditLogs         AuditLog[]
+  eWayBills         EWayBill[]
+  tdsEntries        TdsEntry[]
+  employees         Employee[]
+  salarySlips       SalarySlip[]
 }
 
 model User {
@@ -182,6 +186,13 @@ model Invoice {
   gstAmount     Decimal       @default(0) @db.Decimal(19, 2)
   isInterState  Boolean       @default(false)
   totalAmount   Decimal       @default(0) @db.Decimal(19, 2)
+  irn           String?
+  ackNo         String?
+  ackDate       DateTime?
+  signedQrCode  String?
+  eWayBillNo    String?
+  eWayBillDate  DateTime?
+  eWayBillValidUpto DateTime?
   items         InvoiceItem[]
   payments      InvoicePayment[]
   createdAt     DateTime      @default(now())
@@ -329,3 +340,111 @@ model AuditLog {
   @@index([companyId, entityType])
   @@index([companyId, createdAt])
 }
+
+model EWayBill {
+  id              String    @id @default(uuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  invoiceId       String?
+  ewbNumber       String    @unique
+  ewbDate         DateTime  @default(now())
+  validUpto       DateTime
+  supplyType      String    @default("Outward")
+  subSupplyType   String    @default("Supply")
+  docType         String    @default("Tax Invoice")
+  docNo           String
+  docDate         DateTime
+  fromGstin       String
+  fromAddress     String
+  fromPincode     String
+  toGstin         String
+  toAddress       String
+  toPincode       String
+  totalValue      Decimal   @db.Decimal(19, 2)
+  hsnCode         String?
+  transporterId   String?
+  transporterName String?
+  transMode       String    @default("Road")
+  distanceKm      Int       @default(50)
+  vehicleNo       String?
+  status          String    @default("ACTIVE")
+  createdAt       DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([companyId, ewbNumber])
+}
+
+model TdsEntry {
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+  vendorId      String?
+  billId        String?
+  vendorName    String
+  vendorPan     String?
+  section       String    // 194C, 194J, 194I, 194H, 194Q
+  rate          Decimal   @db.Decimal(5, 2)
+  taxableAmount Decimal   @db.Decimal(19, 2)
+  tdsAmount     Decimal   @db.Decimal(19, 2)
+  challanNo     String?
+  challanDate   DateTime?
+  bsrCode       String?
+  status        String    @default("PENDING") // PENDING, PAID, DEPOSITED
+  quarter       String    @default("Q2")
+  financialYear String    @default("2026-27")
+  createdAt     DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([companyId, section])
+  @@index([companyId, status])
+}
+
+model Employee {
+  id           String       @id @default(uuid())
+  companyId    String
+  company      Company      @relation(fields: [companyId], references: [id])
+  employeeCode String
+  name         String
+  email        String?
+  phone        String?
+  designation  String
+  department   String
+  joiningDate  DateTime     @default(now())
+  pan          String?
+  uan          String?
+  esiNumber    String?
+  bankAccount  String?
+  bankIfsc     String?
+  baseSalary   Decimal      @db.Decimal(19, 2)
+  status       String       @default("Active")
+  salarySlips  SalarySlip[]
+  createdAt    DateTime     @default(now())
+
+  @@unique([companyId, employeeCode])
+  @@index([companyId])
+}
+
+model SalarySlip {
+  id              String    @id @default(uuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  month           Int
+  year            Int
+  basicPay        Decimal   @db.Decimal(19, 2)
+  hra             Decimal   @db.Decimal(19, 2)
+  allowances      Decimal   @db.Decimal(19, 2)
+  grossSalary     Decimal   @db.Decimal(19, 2)
+  pfDeduction     Decimal   @db.Decimal(19, 2)
+  esiDeduction    Decimal   @db.Decimal(19, 2)
+  professionalTax Decimal   @db.Decimal(19, 2)
+  netSalary       Decimal   @db.Decimal(19, 2)
+  status          String    @default("Paid")
+  paymentDate     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([companyId, employeeId, month, year])
+  @@index([companyId])
+}
+
