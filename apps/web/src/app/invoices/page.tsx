@@ -26,7 +26,9 @@ import {
   QrCode as QrCodeIcon, 
   CheckCircle as VerifiedIcon,
   WhatsApp as WhatsAppIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
+  Autorenew as AutorenewIcon,
+  Email as EmailIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
@@ -102,6 +104,12 @@ export default function InvoicesPage() {
   const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
   const [payMethod, setPayMethod] = useState('Cash');
   const [paying, setPaying] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailInvoice, setEmailInvoice] = useState<any>(null);
+  const [emailRecipient, setEmailRecipient] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const loadInvoices = async () => {
     try {
@@ -235,6 +243,43 @@ export default function InvoicesPage() {
     window.open(`/pay/${row.id}`, '_blank');
   };
 
+  const openEmailModal = (row: any) => {
+    const raw = rawInvoices.find((i) => i.id === row.id) || row;
+    setEmailInvoice(raw);
+    const recipient = raw.customer?.email || 'finance@client.com';
+    setEmailRecipient(recipient);
+    setEmailSubject(`Tax Invoice #${raw.number} from ${activeTenant?.name || 'SmartBooks Enterprise'}`);
+    setEmailMessage(`Dear ${row.customerName},\n\nPlease find attached Section 31 GST Tax Invoice #${raw.number} for ₹${Number(row.totalAmount).toLocaleString('en-IN')}.\nDue Date: ${row.dueDate || 'Immediate'}.\n\nYou can also complete payment via Instant UPI here:\n👉 ${window.location.origin}/pay/${row.id}\n\nThank you for your business!`);
+    setEmailModalOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailInvoice) return;
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`/api/invoices/${emailInvoice.id}/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: emailRecipient,
+          subject: emailSubject,
+          message: emailMessage,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Invoice emailed successfully!');
+        setEmailModalOpen(false);
+      } else {
+        alert(data.error || 'Failed to email invoice');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error emailing invoice');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   useEffect(() => {
     loadInvoices();
   }, []);
@@ -302,7 +347,16 @@ export default function InvoicesPage() {
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            startIcon={<AutorenewIcon />}
+            component={Link}
+            href="/invoices/recurring"
+          >
+            Recurring Retainers
+          </Button>
           <Button
             variant="outlined"
             startIcon={<PersonAddIcon />}
@@ -346,7 +400,7 @@ export default function InvoicesPage() {
             {
               field: 'actions',
               headerName: 'Actions',
-              width: 330,
+              width: 410,
               sortable: false,
               renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
@@ -358,6 +412,16 @@ export default function InvoicesPage() {
                     onClick={() => handleDownloadInvoicePdf(params.row)}
                   >
                     PDF
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                    startIcon={<EmailIcon sx={{ fontSize: '15px !important' }} />}
+                    onClick={() => openEmailModal(params.row)}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Email
                   </Button>
                   {params.row.status !== 'Paid' && (
                     <Button
@@ -470,6 +534,50 @@ export default function InvoicesPage() {
           <Button onClick={() => setPayInvoice(null)} disabled={paying}>Cancel</Button>
           <Button variant="contained" onClick={handlePay} disabled={paying || payAmount <= 0}>
             {paying ? 'Recording...' : 'Record Payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Email Invoice Modal */}
+      <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Email Tax Invoice — {emailInvoice?.number}</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField
+            label="Recipient Email"
+            type="email"
+            value={emailRecipient}
+            onChange={(e) => setEmailRecipient(e.target.value)}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Email Subject"
+            value={emailSubject}
+            onChange={(e) => setEmailSubject(e.target.value)}
+            fullWidth
+            required
+          />
+          <TextField
+            label="Message Body"
+            multiline
+            rows={4}
+            value={emailMessage}
+            onChange={(e) => setEmailMessage(e.target.value)}
+            fullWidth
+          />
+          <Typography variant="caption" color="text.secondary">
+            Section 31 GST Tax Invoice PDF and Instant UPI Payment Link will be automatically included.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEmailModalOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            startIcon={<EmailIcon />}
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+          >
+            {sendingEmail ? 'Dispatching...' : 'Send Invoice with PDF'}
           </Button>
         </DialogActions>
       </Dialog>
