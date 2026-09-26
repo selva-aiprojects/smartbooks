@@ -202,7 +202,7 @@ export async function recordInvoicePayment(
     throw new Error('Payment amount must be greater than zero');
   }
 
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({ where: { id, companyId }, include: { customer: true } });
     if (!invoice) {
       throw new Error('Invoice not found or not in this company');
