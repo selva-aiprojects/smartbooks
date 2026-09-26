@@ -1,221 +1,565 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { getAuthHeaders } from '../../lib/api';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  TextField, 
-  Button, 
-  Avatar, 
-  Chip, 
-  Divider, 
+import {
+  Box,
+  Typography,
+  Paper,
+  TextField,
+  Button,
+  Avatar,
+  Chip,
+  Divider,
   CircularProgress,
   Card,
-  CardContent
+  CardContent,
+  IconButton,
+  Tooltip,
+  Alert,
+  LinearProgress,
 } from '@mui/material';
-import { 
-  Send as SendIcon, 
-  Psychology as AIIcon, 
+import {
+  Send as SendIcon,
+  Psychology as AIIcon,
   AutoFixHigh as AutoFixIcon,
-  CheckCircle as CheckIcon 
+  CheckCircle as CheckIcon,
+  ContentCopy as CopyIcon,
+  Refresh as ClearIcon,
+  TrendingUp,
+  AccountBalance,
+  Receipt,
+  Warning,
+  Percent,
+  Inventory,
 } from '@mui/icons-material';
 
+// ── Types ──────────────────────────────────────────────────────────────────
 interface Message {
+  id: string;
   sender: 'user' | 'ai';
   text: string;
   timestamp: string;
+  streaming?: boolean;
 }
 
+interface ConversationTurn {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
+// ── Suggested prompts ──────────────────────────────────────────────────────
+const SUGGESTED_PROMPTS = [
+  { icon: <TrendingUp />, label: 'What is our net profit this year?', color: '#10b981' },
+  { icon: <Receipt />, label: 'Which customer invoices are overdue?', color: '#f59e0b' },
+  { icon: <Warning />, label: 'What vendor bills are unpaid?', color: '#ef4444' },
+  { icon: <AccountBalance />, label: 'Explain our balance sheet position', color: '#8b5cf6' },
+  { icon: <Percent />, label: 'What is our GST liability this quarter?', color: '#0284c7' },
+  { icon: <Inventory />, label: 'Which items are low in stock?', color: '#f97316' },
+];
+
+// ── Markdown-lite renderer ─────────────────────────────────────────────────
+function renderMarkdown(text: string) {
+  // Bold **text**
+  let html = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic *text*
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // Inline code `code`
+  html = html.replace(/`([^`]+)`/g, '<code style="background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.85em;color:#38bdf8">$1</code>');
+  // Convert newlines to <br>
+  html = html.replace(/\n/g, '<br />');
+  // Bullet points - line
+  html = html.replace(/<br \/>- /g, '<br />• ');
+  return html;
+}
+
+// ── ID generator ────────────────────────────────────────────────────────────
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+// ── Main Component ──────────────────────────────────────────────────────────
 export default function AIAssistantPage() {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
+      id: 'init',
       sender: 'ai',
-      text: 'Hello! I am your Autonomous SmartBooks AI Copilot. I can bulk-ingest 500+ invoices, auto-create double-entry journals, catch GST input tax credit mistakes, block duplicate payments, and proactively alert you when utility expenses anomaly-surge (e.g. "Your electricity expense increased 24% this month").',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
+      text: "Hello! I'm your **SmartBooks AI CFO** — powered by **Google Gemini**.\n\nI have read your company's live financial data and can answer questions like:\n- *\"What is our net profit this year?\"*\n- *\"Which invoices are overdue?\"*\n- *\"Explain our GST liability\"*\n- *\"Show me our top expenses\"*\n\nAsk me anything about your finances!",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
   ]);
+  const [conversationHistory, setConversationHistory] = useState<ConversationTurn[]>([]);
   const [loading, setLoading] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Categorizer state
   const [categorizeDesc, setCategorizeDesc] = useState('');
   const [categorizeAmount, setCategorizeAmount] = useState('');
   const [categorizeResult, setCategorizeResult] = useState<any>(null);
+  const [categorizeLoading, setCategorizeLoading] = useState(false);
 
-  const handleSendQuery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // ── Streaming send ───────────────────────────────────────────────────────
+  const handleSend = useCallback(async (questionText?: string) => {
+    const text = (questionText ?? query).trim();
+    if (!text || loading) return;
+
+    const userMsgId = uid();
+    const aiMsgId = uid();
 
     const userMsg: Message = {
+      id: userMsgId,
       sender: 'user',
-      text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const aiMsg: Message = {
+      id: aiMsgId,
+      sender: 'ai',
+      text: '',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      streaming: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, aiMsg]);
     setQuery('');
     setLoading(true);
+    setApiKeyMissing(false);
+
+    let fullText = '';
 
     try {
-      const res = await fetch('/api/ai/query', {
+      const res = await fetch('/api/ai/stream', {
         method: 'POST',
         headers: getAuthHeaders(true),
-        body: JSON.stringify({ query: userMsg.text })
+        body: JSON.stringify({
+          query: text,
+          history: conversationHistory,
+        }),
       });
-      const data = await res.json();
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'ai',
-          text: data.answer || 'Analyzed your general ledger. All accounts are in full double-entry balance.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+      if (!res.body) throw new Error('No response body');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const rawChunk = decoder.decode(value, { stream: true });
+        const lines = rawChunk.split('\n').filter((l) => l.startsWith('data: '));
+
+        for (const line of lines) {
+          try {
+            const payload = JSON.parse(line.slice(6));
+            if (payload.error) {
+              if (payload.error.includes('GEMINI_API_KEY')) {
+                setApiKeyMissing(true);
+              }
+              fullText = `⚠️ ${payload.error}`;
+              break;
+            }
+            if (payload.done) break;
+            if (payload.token) {
+              fullText += payload.token;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText } : m))
+              );
+            }
+          } catch {
+            // skip malformed chunks
+          }
         }
-      ]);
+      }
     } catch (err) {
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'ai',
-          text: 'SmartBooks AI: Your Balance Sheet currently shows ₹33,500 in Total Assets balanced against ₹4,200 Accounts Payable and ₹29,300 Owner Equity. Year-to-Date Net Profit is ₹10,000.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
+      fullText = '⚠️ Unable to reach the AI service. Please check that the API server is running.';
     } finally {
+      // Finalise the streaming message
+      setMessages((prev) =>
+        prev.map((m) => (m.id === aiMsgId ? { ...m, text: fullText || '...', streaming: false } : m))
+      );
+
+      // Append to conversation history for multi-turn context
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: 'user', parts: [{ text }] },
+        { role: 'model', parts: [{ text: fullText }] },
+      ]);
+
       setLoading(false);
+    }
+  }, [query, loading, conversationHistory]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
+  const handleClear = () => {
+    setMessages([
+      {
+        id: uid(),
+        sender: 'ai',
+        text: 'Conversation cleared. Ask me anything about your finances!',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+    setConversationHistory([]);
+    setApiKeyMissing(false);
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // ── Smart Categorizer ────────────────────────────────────────────────────
   const handleCategorize = async () => {
     if (!categorizeDesc) return;
+    setCategorizeLoading(true);
+    setCategorizeResult(null);
     try {
       const res = await fetch('/api/ai/categorize', {
         method: 'POST',
         headers: getAuthHeaders(true),
-        body: JSON.stringify({ description: categorizeDesc, amount: parseFloat(categorizeAmount) || 0 })
+        body: JSON.stringify({ description: categorizeDesc, amount: parseFloat(categorizeAmount) || 0 }),
       });
       const data = await res.json();
       setCategorizeResult(data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setCategorizeLoading(false);
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <AIIcon sx={{ fontSize: 36, color: '#0284c7' }} />
-          AI Smart Financial Assistant
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Ask natural language accounting questions or auto-categorize raw expense records using generative accounting intelligence.
-        </Typography>
+    <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Page Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <AIIcon sx={{ fontSize: 36, color: '#0284c7' }} />
+            AI CFO Assistant
+            <Chip
+              label="Gemini 1.5 Flash"
+              size="small"
+              sx={{ bgcolor: 'rgba(2,132,199,0.12)', border: '1px solid #0284c7', color: '#0284c7', fontWeight: 700, fontSize: 11 }}
+            />
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Powered by Google Gemini with real-time financial data — ask anything about your business
+          </Typography>
+        </Box>
+        <Tooltip title="Clear conversation">
+          <IconButton onClick={handleClear} size="small" sx={{ color: 'text.secondary' }}>
+            <ClearIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 3 }}>
-        {/* Chat Widget */}
-        <Paper sx={{ p: 3, borderRadius: 3, display: 'flex', flexDirection: 'column', height: 520 }}>
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, mb: 2, pr: 1 }}>
-            {messages.map((m, idx) => (
-              <Box 
-                key={idx} 
-                sx={{ 
-                  display: 'flex', 
-                  gap: 1.5, 
-                  alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '80%'
+      {/* API Key Warning */}
+      {apiKeyMissing && (
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
+          <strong>GEMINI_API_KEY not set.</strong> Add your free API key from{' '}
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: '#f59e0b' }}>
+            Google AI Studio
+          </a>{' '}
+          to your <code>.env</code> file and restart the API server.
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3, alignItems: 'start' }}>
+        {/* ── Chat Panel ─────────────────────────────────────────────────── */}
+        <Paper sx={{ p: 0, borderRadius: 3, display: 'flex', flexDirection: 'column', height: 600, overflow: 'hidden' }}>
+          {/* Chat header */}
+          <Box sx={{ px: 3, py: 2, bgcolor: 'rgba(2,132,199,0.06)', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ bgcolor: '#0284c7', width: 32, height: 32 }}>
+              <AIIcon sx={{ fontSize: 18 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700}>SmartBooks AI CFO</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {loading ? 'Analyzing your financials...' : 'Online · Real-time data'}
+              </Typography>
+            </Box>
+            {loading && <LinearProgress sx={{ ml: 'auto', width: 80, borderRadius: 1 }} />}
+          </Box>
+
+          {/* Messages area */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflowY: 'auto',
+              px: 3,
+              py: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2.5,
+              '&::-webkit-scrollbar': { width: 4 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'divider', borderRadius: 2 },
+            }}
+          >
+            {messages.map((m) => (
+              <Box
+                key={m.id}
+                sx={{
+                  display: 'flex',
+                  gap: 1.5,
+                  flexDirection: m.sender === 'user' ? 'row-reverse' : 'row',
+                  alignItems: 'flex-start',
                 }}
               >
                 {m.sender === 'ai' && (
-                  <Avatar sx={{ bgcolor: '#0284c7', width: 36, height: 36 }}>
-                    <AIIcon fontSize="small" />
+                  <Avatar sx={{ bgcolor: '#0284c7', width: 32, height: 32, flexShrink: 0, mt: 0.5 }}>
+                    <AIIcon sx={{ fontSize: 17 }} />
                   </Avatar>
                 )}
-                <Paper 
-                  sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    backgroundColor: m.sender === 'user' ? '#0284c7' : '#f1f5f9',
-                    color: m.sender === 'user' ? '#ffffff' : '#0f172a'
-                  }}
-                >
-                  <Typography variant="body2">{m.text}</Typography>
-                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.7, textAlign: 'right' }}>
-                    {m.timestamp}
-                  </Typography>
-                </Paper>
+
+                <Box sx={{ maxWidth: '78%', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      px: 2.5,
+                      py: 1.75,
+                      borderRadius: m.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      bgcolor: m.sender === 'user' ? '#0284c7' : 'background.default',
+                      border: m.sender === 'ai' ? '1px solid' : 'none',
+                      borderColor: 'divider',
+                      color: m.sender === 'user' ? '#fff' : 'text.primary',
+                      position: 'relative',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{ lineHeight: 1.65, fontSize: '0.875rem' }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text || '') }}
+                    />
+                    {m.streaming && m.text === '' && (
+                      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                        {[0, 1, 2].map((i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              width: 7, height: 7, borderRadius: '50%', bgcolor: '#0284c7',
+                              animation: 'bounce 1.2s infinite',
+                              animationDelay: `${i * 0.2}s`,
+                              '@keyframes bounce': {
+                                '0%, 80%, 100%': { transform: 'scale(0)' },
+                                '40%': { transform: 'scale(1)' },
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Paper>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                      {m.timestamp}
+                    </Typography>
+                    {m.sender === 'ai' && !m.streaming && m.text && (
+                      <Tooltip title="Copy response">
+                        <IconButton size="small" onClick={() => handleCopy(m.text)} sx={{ p: 0.25, opacity: 0.5, '&:hover': { opacity: 1 } }}>
+                          <CopyIcon sx={{ fontSize: 13 }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
+                </Box>
               </Box>
             ))}
-            {loading && (
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <CircularProgress size={20} />
-                <Typography variant="caption" color="text.secondary">SmartBooks AI is analyzing your general ledger...</Typography>
-              </Box>
-            )}
+            <div ref={messagesEndRef} />
           </Box>
 
-          <Divider sx={{ mb: 2 }} />
+          {/* Suggested prompts */}
+          {messages.length <= 1 && (
+            <Box sx={{ px: 3, pb: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {SUGGESTED_PROMPTS.map((p, i) => (
+                <Chip
+                  key={i}
+                  icon={<Box sx={{ color: `${p.color} !important`, fontSize: 15, display: 'flex' }}>{p.icon}</Box>}
+                  label={p.label}
+                  size="small"
+                  onClick={() => handleSend(p.label)}
+                  disabled={loading}
+                  sx={{
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    '&:hover': { borderColor: p.color, bgcolor: `${p.color}11` },
+                    transition: 'all 0.15s',
+                  }}
+                />
+              ))}
+            </Box>
+          )}
 
-          <Box component="form" onSubmit={handleSendQuery} sx={{ display: 'flex', gap: 1.5 }}>
-            <TextField 
-              fullWidth 
-              placeholder="Ask anything (e.g. 'What is our Net Income?', 'Show unpaid bills')"
+          <Divider />
+
+          {/* Input area */}
+          <Box sx={{ px: 3, py: 2, display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
+            <TextField
+              fullWidth
+              multiline
+              maxRows={4}
+              placeholder="Ask anything (e.g. 'What is our cash position?', 'Show overdue invoices')"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
               size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
             />
-            <Button type="submit" variant="contained" endIcon={<SendIcon />}>
-              Ask
+            <Button
+              variant="contained"
+              onClick={() => handleSend()}
+              disabled={loading || !query.trim()}
+              sx={{
+                minWidth: 48,
+                width: 48,
+                height: 40,
+                borderRadius: 2.5,
+                p: 0,
+                bgcolor: '#0284c7',
+                '&:hover': { bgcolor: '#0369a1' },
+                flexShrink: 0,
+              }}
+            >
+              {loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : <SendIcon sx={{ fontSize: 18 }} />}
             </Button>
           </Box>
         </Paper>
 
-        {/* Smart Categorizer Widget */}
-        <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)' }}>
-          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AutoFixIcon color="primary" />
-              Smart Expense Categorizer
-            </Typography>
+        {/* ── Right Panel ─────────────────────────────────────────────────── */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Smart Categorizer */}
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pb: '16px !important' }}>
+              <Box>
+                <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AutoFixIcon sx={{ color: '#8b5cf6' }} />
+                  Smart Categorizer
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  AI maps any transaction to your Chart of Accounts
+                </Typography>
+              </Box>
 
-            <Typography variant="body2" color="text.secondary">
-              Enter any transaction description to auto-detect its GL Account classification.
-            </Typography>
+              <TextField
+                label="Transaction Description"
+                placeholder="e.g. AWS Cloud Invoice May 2026"
+                value={categorizeDesc}
+                onChange={(e) => setCategorizeDesc(e.target.value)}
+                size="small"
+                fullWidth
+              />
 
-            <TextField 
-              label="Transaction Description" 
-              placeholder="e.g. AWS Cloud Web Server" 
-              value={categorizeDesc} 
-              onChange={(e) => setCategorizeDesc(e.target.value)} 
-              size="small" 
-              fullWidth 
-            />
+              <TextField
+                label="Amount (₹)"
+                type="number"
+                placeholder="15000"
+                value={categorizeAmount}
+                onChange={(e) => setCategorizeAmount(e.target.value)}
+                size="small"
+                fullWidth
+              />
 
-            <TextField 
-              label="Amount (₹)" 
-              type="number" 
-              placeholder="1800" 
-              value={categorizeAmount} 
-              onChange={(e) => setCategorizeAmount(e.target.value)} 
-              size="small" 
-              fullWidth 
-            />
+              <Button
+                variant="contained"
+                onClick={handleCategorize}
+                disabled={!categorizeDesc || categorizeLoading}
+                fullWidth
+                sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' }, borderRadius: 2 }}
+                startIcon={categorizeLoading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <AutoFixIcon />}
+              >
+                {categorizeLoading ? 'Analyzing...' : 'Categorize with AI'}
+              </Button>
 
-            <Button variant="contained" color="secondary" onClick={handleCategorize} fullWidth>
-              Categorize Transaction
-            </Button>
+              {categorizeResult && (
+                <Paper
+                  sx={{
+                    p: 2,
+                    bgcolor: categorizeResult.engine === 'gemini' ? 'rgba(139,92,246,0.06)' : 'rgba(16,185,129,0.06)',
+                    border: '1px solid',
+                    borderColor: categorizeResult.engine === 'gemini' ? 'rgba(139,92,246,0.3)' : 'rgba(16,185,129,0.3)',
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Chip
+                      icon={<CheckIcon />}
+                      label={`${Math.round(categorizeResult.confidence * 100)}% confidence`}
+                      color="success"
+                      size="small"
+                    />
+                    <Chip
+                      label={categorizeResult.engine === 'gemini' ? 'Gemini AI' : 'Rule-based'}
+                      size="small"
+                      sx={{
+                        bgcolor: categorizeResult.engine === 'gemini' ? 'rgba(139,92,246,0.15)' : 'rgba(107,114,128,0.15)',
+                        color: categorizeResult.engine === 'gemini' ? '#8b5cf6' : '#6b7280',
+                        fontWeight: 700, fontSize: 10,
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="body2" gutterBottom>
+                    <strong>GL Code:</strong> {categorizeResult.suggestedAccountCode}
+                  </Typography>
+                  <Typography variant="body2" gutterBottom>
+                    <strong>Account:</strong> {categorizeResult.suggestedAccountName}
+                  </Typography>
+                  {categorizeResult.reasoning && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+                      "{categorizeResult.reasoning}"
+                    </Typography>
+                  )}
+                </Paper>
+              )}
+            </CardContent>
+          </Card>
 
-            {categorizeResult && (
-              <Paper sx={{ p: 2, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, mt: 1 }}>
-                <Chip icon={<CheckIcon />} label={`${Math.round(categorizeResult.confidence * 100)}% Confidence Match`} color="success" size="small" sx={{ mb: 1 }} />
-                <Typography variant="body2"><strong>GL Code:</strong> {categorizeResult.suggestedAccountCode}</Typography>
-                <Typography variant="body2"><strong>Suggested Account:</strong> {categorizeResult.suggestedAccountName}</Typography>
-              </Paper>
-            )}
-          </CardContent>
-        </Card>
+          {/* Capabilities card */}
+          <Card sx={{ borderRadius: 3, bgcolor: 'rgba(2,132,199,0.04)', border: '1px solid rgba(2,132,199,0.15)' }}>
+            <CardContent sx={{ pb: '16px !important' }}>
+              <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom>
+                What SmartBooks AI can do
+              </Typography>
+              {[
+                'Answer questions in plain English / Hindi',
+                'Analyze P&L, Balance Sheet, Cash Flow',
+                'Identify overdue invoices and unpaid bills',
+                'Break down GST liability (CGST/SGST/IGST)',
+                'Spot expense anomalies and trends',
+                'Explain accounting entries',
+                'Give CFO-level business insights',
+              ].map((item, i) => (
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.4 }}>
+                  <CheckIcon sx={{ fontSize: 14, color: '#10b981' }} />
+                  <Typography variant="caption" color="text.secondary">{item}</Typography>
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
     </Box>
   );
