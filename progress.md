@@ -96,15 +96,16 @@
   - `AuthContext.tsx`: Preserves real database company IDs from API login response without overwriting them with mock tenant names
   - Admin credentials synced with Neon DB (`admin@smartbooks.com` / `admin123`)
   - Sanitized login input (trim, case-insensitive, demo fallback resilience)
-✅ **Vercel Serverless Route Handlers (`apps/web/src/app/api/`)**:
-  - `POST /api/ai/stream` — Native Next.js SSE streaming with Gemini and live financial RAG
-  - `POST /api/ai/query` — Native Next.js single-turn Gemini RAG query
-  - `POST /api/ai/categorize` — Native Next.js transaction categorizer
-  - `GET /api/me/company` & `PATCH /api/me/company` — Native Next.js company settings
-  - `GET /api/me/company/users` & `POST /api/me/company/users` — Native Next.js user management
-  - `PATCH /api/me/users/[id]` & `DELETE /api/me/users/[id]` — User status & deletion
+✅ **Vercel Serverless Deployment Fixes**:
+  - `apps/web/next.config.js`: Removed unconditional catch-all proxy to `http://localhost:3000` that caused Vercel to 404 on native route handlers
+  - `vercel.json`: Added explicit `"framework": "nextjs"` configuration
+  - `apps/web/src/app/api/ai/stream/route.ts`: Native Next.js SSE streaming with Gemini and live financial RAG
+  - `apps/web/src/app/api/ai/query/route.ts`: Native Next.js single-turn Gemini RAG query
+  - `apps/web/src/app/api/ai/categorize/route.ts`: Native Next.js transaction categorizer
+  - `apps/web/src/app/api/me/company/route.ts` & `apps/web/src/app/api/me/company/users/route.ts`: Native Next.js user management & settings
+  - `ai-assistant/page.tsx`: Robust 404 fallback to `/api/ai/query` endpoint
 
-⚙️ **To activate AI:** Add `GEMINI_API_KEY` to `.env` (free key from https://aistudio.google.com/app/apikey)
+⚙️ **To activate AI on Vercel:** Add `GEMINI_API_KEY` and `DATABASE_URL` to your Vercel Project Settings → Environment Variables.
 
 ---
 

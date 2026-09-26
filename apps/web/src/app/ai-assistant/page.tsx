@@ -165,7 +165,24 @@ export default function AIAssistantPage() {
           fullText = '⚠️ **Session expired.** Please refresh the page and log in again.';
         } else if (res.status === 503) {
           setApiKeyMissing(true);
-          fullText = '⚠️ **AI not configured.** Add `GEMINI_API_KEY` to your `.env` file, then restart the API server (`Ctrl+C` → `npm run dev`).';
+          fullText = '⚠️ **AI not configured.** Add `GEMINI_API_KEY` to your environment variables in Vercel or `.env` file.';
+        } else if (res.status === 404) {
+          // If streaming endpoint returned 404, attempt fallback to non-streaming /query
+          try {
+            const fallback = await fetch('/api/ai/query', {
+              method: 'POST',
+              headers: getAuthHeaders(true),
+              body: JSON.stringify({ query: text }),
+            });
+            if (fallback.ok) {
+              const data = await fallback.json();
+              fullText = data.answer || '⚠️ AI returned no response.';
+            } else {
+              fullText = '⚠️ **Endpoint unavailable (HTTP 404).** Please wait for the latest Vercel deployment to finish.';
+            }
+          } catch {
+            fullText = '⚠️ **Endpoint unavailable (HTTP 404).** Please wait for the latest Vercel deployment to finish.';
+          }
         } else {
           const errJson = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
           fullText = `⚠️ ${errJson?.error || `Server error (${res.status})`}`;
