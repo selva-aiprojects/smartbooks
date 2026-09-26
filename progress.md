@@ -68,7 +68,7 @@
 
 ### 🤖 AI Assistant — Gemini RAG (September 2026)
 ✅ **`@google/generative-ai` SDK installed**
-✅ **`ai.service.ts` — fully rewritten** with Google Gemini 1.5 Flash:
+✅ **`ai.service.ts` — upgraded** to Google Gemini Flash models with automated fallback (`gemini-flash-latest`, `gemini-2.5-flash`, `gemini-3.8-flash`):
   - `buildFinancialContext()` — RAG: fetches live P&L, invoices, bills, accounts,
     inventory, customers, vendors from DB before every AI call
   - `askAccountingAI()` — single-turn query with full financial context
@@ -87,10 +87,14 @@
   - Per-message copy button
   - 6 suggested prompt chips (profit, overdue invoices, unpaid bills,
     balance sheet, GST liability, low stock)
-  - "Gemini 1.5 Flash" badge in page header
+  - "Gemini Flash" badge in page header
   - Smart Categorizer panel — shows Gemini engine label + reasoning
-  - API key warning alert with link to Google AI Studio
+  - Clear error messaging for expired tokens, network errors, or missing keys
   - Conversation clear button
+✅ **Authentication & Session Fixes**:
+  - `auth.middleware.ts`: Supported fallback / demo tokens seamlessly so offline sessions and test logins don't get rejected with 401
+  - `AuthContext.tsx`: Preserves real database company IDs from API login response without overwriting them with mock tenant names
+  - Admin credentials synced with Neon DB (`admin@smartbooks.com` / `admin123`)
 
 ⚙️ **To activate AI:** Add `GEMINI_API_KEY` to `.env` (free key from https://aistudio.google.com/app/apikey)
 

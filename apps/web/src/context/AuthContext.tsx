@@ -42,12 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (savedToken && savedUser) {
       try {
         const restored = JSON.parse(savedUser);
-        const demo = resolveTenantForEmail(restored.email || '');
-        if (demo) {
-          restored.companyId = demo.id;
-          restored.company = { ...(restored.company || {}), name: demo.name };
-          persistTenantId(demo.id);
-        }
         setUser(restored);
         setIsAuthenticated(true);
       } catch (e) {
@@ -68,49 +62,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const { token, user } = await response.json();
-        if (demo) {
-          user.companyId = demo.id;
-          user.company = { ...(user.company || {}), name: demo.name };
-          persistTenantId(demo.id);
-        }
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
+        if (user.companyId) {
+          persistTenantId(user.companyId);
+        }
         setUser(user);
         setIsAuthenticated(true);
         return true;
       }
+
+      // Real login failed — do NOT fall back to a fake token.
+      // Only allow demo/fallback for the super-admin demo account.
+      const isSuperAdminDemo =
+        email.toLowerCase() === 'admin@smartbooks.ai' ||
+        email.toLowerCase().includes('superadmin');
+
+      if (!isSuperAdminDemo) {
+        // Return false so the login form can show "Invalid credentials"
+        return false;
+      }
     } catch (error) {
-      console.warn('Backend API connection warning, switching to fallback session:', error);
+      console.warn('API server unreachable — switching to offline demo mode:', error);
     }
 
-    // Fallback authentication for offline or demo testing
-    let tenantId = 'tenant-acme';
-    let companyName = 'Acme Global Tech Pvt Ltd';
+    // ── Offline demo / super-admin fallback only ──────────────────────────
     const isSuperAdmin =
       email.toLowerCase().includes('superadmin') ||
       email.toLowerCase() === 'admin@smartbooks.ai' ||
       email.toLowerCase() === 'admin@smartbooks.com';
 
-    if (demo) {
-      tenantId = demo.id;
-      companyName = demo.name;
-    }
+    let tenantId = demo?.id || 'tenant-acme';
+    let companyName = demo?.name || 'Acme Global Tech Pvt Ltd';
 
     const fallbackUser = {
       id: `usr-${Date.now()}`,
-      email: email,
+      email,
       companyId: tenantId,
-      isSuperAdmin: isSuperAdmin,
-      company: {
-        name: companyName,
-        subdomain: tenantId.replace('tenant-', ''),
-        currency: 'INR'
-      }
+      isSuperAdmin,
+      company: { name: companyName, subdomain: tenantId.replace('tenant-', ''), currency: 'INR' }
     };
-    localStorage.setItem('token', 'fallback-token-2026');
+    localStorage.setItem('token', 'fallback-token-demo');
     localStorage.setItem('user', JSON.stringify(fallbackUser));
     localStorage.setItem('smartbooks_active_tenant_id', tenantId);
-    // Always persist the superadmin flag so TenantContext reads it correctly on load
     localStorage.setItem('smartbooks_is_superadmin', String(isSuperAdmin));
     setUser(fallbackUser);
     setIsAuthenticated(true);

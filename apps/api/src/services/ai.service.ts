@@ -202,12 +202,20 @@ RULES:
 `;
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Gemini Supported Models (gemini-flash-latest, gemini-2.5-flash, gemini-3.8-flash)
+// ──────────────────────────────────────────────────────────────────────────────
+const CANDIDATE_MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-3.8-flash',
+].filter(Boolean) as string[];
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Main AI Query Function (streaming-capable)
 // ──────────────────────────────────────────────────────────────────────────────
 export async function askAccountingAI(companyId: string, query: string): Promise<string> {
   const genAI = getGeminiClient();
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
   const financialContext = await buildFinancialContext(companyId);
 
   const prompt = `${SYSTEM_PROMPT}
@@ -220,9 +228,22 @@ User Question: ${query}
 
 Provide a clear, accurate, CFO-level answer based strictly on the financial data above.`;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return response.text();
+  let lastError: any = null;
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      return response.text();
+    } catch (err: any) {
+      lastError = err;
+      if (err.message?.includes('404') || err.message?.includes('503') || err.message?.includes('not found')) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -234,8 +255,6 @@ export async function askAccountingAIStream(
   conversationHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
 ) {
   const genAI = getGeminiClient();
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
   const financialContext = await buildFinancialContext(companyId);
 
   // Build the full system + context as the first message
@@ -248,12 +267,24 @@ export async function askAccountingAIStream(
     parts: [{ text: 'Understood. I have reviewed the company financial data and am ready to provide CFO-level insights. What would you like to know?' }],
   };
 
-  const chat = model.startChat({
-    history: [systemMessage, systemAck, ...conversationHistory],
-    generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
-  });
-
-  return chat.sendMessageStream(query);
+  let lastError: any = null;
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const chat = model.startChat({
+        history: [systemMessage, systemAck, ...conversationHistory],
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
+      });
+      return await chat.sendMessageStream(query);
+    } catch (err: any) {
+      lastError = err;
+      if (err.message?.includes('404') || err.message?.includes('503') || err.message?.includes('not found')) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -271,7 +302,7 @@ export async function categorizeTransaction(companyId: string, description: stri
   }
 
   const genAI = getGeminiClient();
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: CANDIDATE_MODELS[0] });
 
   const accountList = accounts.map((a) => `${a.code} | ${a.name} (${a.type})`).join('\n');
 

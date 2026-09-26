@@ -309,7 +309,7 @@ export default function AIAssistantPage() {
             <AIIcon sx={{ fontSize: 36, color: '#0284c7' }} />
             AI CFO Assistant
             <Chip
-              label="Gemini 1.5 Flash"
+              label="Gemini Flash"
               size="small"
               sx={{ bgcolor: 'rgba(2,132,199,0.12)', border: '1px solid #0284c7', color: '#0284c7', fontWeight: 700, fontSize: 11 }}
             />
