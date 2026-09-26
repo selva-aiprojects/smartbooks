@@ -48,14 +48,14 @@ interface ConversationTurn {
   parts: { text: string }[];
 }
 
-// ── Suggested prompts ──────────────────────────────────────────────────────
-const SUGGESTED_PROMPTS = [
-  { icon: <TrendingUp />, label: 'What is our net profit this year?', color: '#10b981' },
-  { icon: <Receipt />, label: 'Which customer invoices are overdue?', color: '#f59e0b' },
-  { icon: <Warning />, label: 'What vendor bills are unpaid?', color: '#ef4444' },
-  { icon: <AccountBalance />, label: 'Explain our balance sheet position', color: '#8b5cf6' },
-  { icon: <Percent />, label: 'What is our GST liability this quarter?', color: '#0284c7' },
-  { icon: <Inventory />, label: 'Which items are low in stock?', color: '#f97316' },
+// ── Suggested prompts (defined inside component to keep JSX in React context) ─
+const SUGGESTED_PROMPT_DEFS = [
+  { label: 'What is our net profit this year?', color: '#10b981', iconType: 'trending' },
+  { label: 'Which customer invoices are overdue?', color: '#f59e0b', iconType: 'receipt' },
+  { label: 'What vendor bills are unpaid?', color: '#ef4444', iconType: 'warning' },
+  { label: 'Explain our balance sheet position', color: '#8b5cf6', iconType: 'balance' },
+  { label: 'What is our GST liability this quarter?', color: '#0284c7', iconType: 'percent' },
+  { label: 'Which items are low in stock?', color: '#f97316', iconType: 'inventory' },
 ];
 
 // ── Markdown-lite renderer ─────────────────────────────────────────────────
@@ -79,14 +79,27 @@ function uid() {
 }
 
 // ── Main Component ──────────────────────────────────────────────────────────
+function getIconForType(type: string) {
+  switch (type) {
+    case 'trending':   return <TrendingUp />;
+    case 'receipt':    return <Receipt />;
+    case 'warning':    return <Warning />;
+    case 'balance':    return <AccountBalance />;
+    case 'percent':    return <Percent />;
+    case 'inventory':  return <Inventory />;
+    default:           return <TrendingUp />;
+  }
+}
+
 export default function AIAssistantPage() {
   const [query, setQuery] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
+  // Use lazy initializer (() => ...) so Date() only runs on client, never on SSR
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 'init',
       sender: 'ai',
       text: "Hello! I'm your **SmartBooks AI CFO** — powered by **Google Gemini**.\n\nI have read your company's live financial data and can answer questions like:\n- *\"What is our net profit this year?\"*\n- *\"Which invoices are overdue?\"*\n- *\"Explain our GST liability\"*\n- *\"Show me our top expenses\"*\n\nAsk me anything about your finances!",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: '',
     },
   ]);
   const [conversationHistory, setConversationHistory] = useState<ConversationTurn[]>([]);
@@ -115,19 +128,20 @@ export default function AIAssistantPage() {
 
     const userMsgId = uid();
     const aiMsgId = uid();
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const userMsg: Message = {
       id: userMsgId,
       sender: 'user',
       text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: now,
     };
 
     const aiMsg: Message = {
       id: aiMsgId,
       sender: 'ai',
       text: '',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: now,
       streaming: true,
     };
 
@@ -224,6 +238,12 @@ export default function AIAssistantPage() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
   };
+
+  // Build prompted chip list inside component so JSX icons stay in React scope
+  const SUGGESTED_PROMPTS = SUGGESTED_PROMPT_DEFS.map((p) => ({
+    ...p,
+    icon: getIconForType(p.iconType),
+  }));
 
   // ── Smart Categorizer ────────────────────────────────────────────────────
   const handleCategorize = async () => {
