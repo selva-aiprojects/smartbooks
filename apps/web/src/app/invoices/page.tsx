@@ -18,7 +18,16 @@ import {
   MenuItem
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Add as AddIcon, PersonAdd as PersonAddIcon, Payments as PaymentsIcon, PictureAsPdf as PdfIcon, QrCode as QrCodeIcon, CheckCircle as VerifiedIcon } from '@mui/icons-material';
+import { 
+  Add as AddIcon, 
+  PersonAdd as PersonAddIcon, 
+  Payments as PaymentsIcon, 
+  PictureAsPdf as PdfIcon, 
+  QrCode as QrCodeIcon, 
+  CheckCircle as VerifiedIcon,
+  WhatsApp as WhatsAppIcon,
+  OpenInNew as OpenInNewIcon
+} from '@mui/icons-material';
 import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
 import { useTenant } from '../../context/TenantContext';
@@ -206,6 +215,26 @@ export default function InvoicesPage() {
     }).catch(() => {});
   };
 
+  const handleWhatsAppReminder = (row: any) => {
+    const raw = rawInvoices.find((i) => i.id === row.id) || row;
+    const rawPhone = raw.customer?.phone || '919840122334';
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+    const phone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+    const companyName = activeTenant?.name || 'SmartBooks Enterprise';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://smartbooks.app';
+    const payUrl = `${origin}/pay/${row.id}`;
+    const amount = Number(row.totalAmount).toLocaleString('en-IN');
+    
+    const message = `*Payment Reminder from ${companyName}*\n\nDear ${row.customerName},\nThis is a gentle reminder that Tax Invoice *#${row.number}* for *₹${amount}* is pending payment.\nDue Date: ${row.dueDate || 'Immediate'}\n\nKindly complete payment via Instant UPI or review invoice details here:\n👉 ${payUrl}\n\nThank you!`;
+    
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  const handleOpenPayPortal = (row: any) => {
+    window.open(`/pay/${row.id}`, '_blank');
+  };
+
   useEffect(() => {
     loadInvoices();
   }, []);
@@ -317,10 +346,10 @@ export default function InvoicesPage() {
             {
               field: 'actions',
               headerName: 'Actions',
-              width: 200,
+              width: 330,
               sortable: false,
               renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
                   <Button
                     size="small"
                     variant="outlined"
@@ -329,6 +358,33 @@ export default function InvoicesPage() {
                     onClick={() => handleDownloadInvoicePdf(params.row)}
                   >
                     PDF
+                  </Button>
+                  {params.row.status !== 'Paid' && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={<WhatsAppIcon sx={{ fontSize: '15px !important' }} />}
+                      onClick={() => handleWhatsAppReminder(params.row)}
+                      sx={{
+                        bgcolor: '#25D366',
+                        color: '#ffffff',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        '&:hover': { bgcolor: '#128C7E' },
+                      }}
+                    >
+                      WhatsApp
+                    </Button>
+                  )}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                    startIcon={<OpenInNewIcon sx={{ fontSize: '15px !important' }} />}
+                    onClick={() => handleOpenPayPortal(params.row)}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Pay Link
                   </Button>
                   {params.row.status !== 'Paid' && params.row.status !== 'Void' ? (
                     <Button size="small" variant="contained" color="secondary" startIcon={<PaymentsIcon />} onClick={() => openPayment(params.row)}>
