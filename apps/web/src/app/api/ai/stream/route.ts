@@ -1,5 +1,5 @@
-import { getAuthUser } from '@/lib/server-auth';
-import { askAccountingAIStream } from '@/lib/server-ai';
+import { getAuthUser } from '../../../../lib/server-auth';
+import { askAccountingAIStream } from '../../../../lib/server-ai';
 
 export const dynamic = 'force-dynamic';
 

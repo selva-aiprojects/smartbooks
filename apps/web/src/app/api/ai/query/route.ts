@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/server-auth';
-import { askAccountingAI } from '@/lib/server-ai';
+import { getAuthUser } from '../../../../lib/server-auth';
+import { askAccountingAI } from '../../../../lib/server-ai';
 
 export const dynamic = 'force-dynamic';
 

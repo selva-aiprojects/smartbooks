@@ -121,11 +121,11 @@ export async function buildFinancialContext(companyId: string): Promise<string> 
       .join('\n') || '  None recorded';
 
   const recentInvoices = invoices.slice(0, 5).map(
-    (i) => `  - Inv #${i.invoiceNumber}: ${fmt(Number(i.totalAmount))} to ${i.customer?.name || 'Customer'} [Status: ${i.status}]`
+    (i) => `  - Inv #${i.number}: ${fmt(Number(i.totalAmount))} to ${i.customer?.name || 'Customer'} [Status: ${i.status}]`
   ).join('\n') || '  None';
 
   const recentBills = bills.slice(0, 5).map(
-    (b) => `  - Bill #${b.billNumber}: ${fmt(Number(b.totalAmount))} from ${b.vendor?.name || 'Vendor'} [Status: ${b.status}]`
+    (b) => `  - Bill #${b.number}: ${fmt(Number(b.totalAmount))} from ${b.vendor?.name || 'Vendor'} [Status: ${b.status}]`
   ).join('\n') || '  None';
 
   const stockSummary = items.slice(0, 8).map(
