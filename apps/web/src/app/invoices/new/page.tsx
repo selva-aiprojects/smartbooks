@@ -35,6 +35,8 @@ export default function NewInvoicePage() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [customerId, setCustomerId] = useState('');
+  const [projects, setProjects] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const [projectId, setProjectId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-2026-${Math.floor(100 + Math.random() * 900)}`);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]);
@@ -50,8 +52,9 @@ export default function NewInvoicePage() {
     Promise.all([
       fetch('/api/invoices/customers', { headers: getAuthHeaders() }),
       fetch('/api/items', { headers: getAuthHeaders() }),
+      fetch('/api/projects?status=ACTIVE', { headers: getAuthHeaders() }),
     ])
-      .then(async ([custRes, itemRes]) => {
+      .then(async ([custRes, itemRes, projRes]) => {
         if (custRes.ok) {
           const data = await custRes.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -62,6 +65,10 @@ export default function NewInvoicePage() {
         if (itemRes.ok) {
           const data = await itemRes.json();
           if (Array.isArray(data)) setCatalog(data);
+        }
+        if (projRes && projRes.ok) {
+          const data = await projRes.json();
+          if (data.projects) setProjects(data.projects);
         }
       })
       .catch(() => { /* fall back to manual entry */ })
@@ -113,6 +120,7 @@ export default function NewInvoicePage() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({
           customerId,
+          projectId: projectId || null,
           number: invoiceNumber,
           issueDate,
           dueDate,
@@ -169,6 +177,24 @@ export default function NewInvoicePage() {
                 {loadingEntities && <MenuItem value=""><em>Loading...</em></MenuItem>}
                 {customers.map((c) => (
                   <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Project / Cost Center</InputLabel>
+              <Select
+                value={projectId}
+                label="Project / Cost Center"
+                onChange={(e) => setProjectId(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>None (General Operations)</em>
+                </MenuItem>
+                {projects.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    [{p.code}] {p.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>

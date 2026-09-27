@@ -6,7 +6,8 @@ import {
   TableContainer, TableHead, TableRow, Button, Chip, Card, CardContent, Divider, CircularProgress,
   TextField, Stack,
 } from '@mui/material';
-import { Download as DownloadIcon, Print as PrintIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Download as DownloadIcon, Print as PrintIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon, Assignment as ProjectIcon } from '@mui/icons-material';
+import Link from 'next/link';
 import { getAuthHeaders } from '../../lib/api';
 import { useTenant } from '../../context/TenantContext';
 import { exportReportPdf } from '../../lib/pdf-generator';
@@ -404,6 +405,9 @@ export default function FinancialReportsPage() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Button variant="outlined" component={Link} href="/projects" startIcon={<ProjectIcon />} sx={{ fontWeight: 600 }}>
+            Project P&L Hub
+          </Button>
           <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>Print</Button>
           <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleExport}>Export PDF / CSV</Button>
         </Box>

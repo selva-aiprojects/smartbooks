@@ -12,7 +12,12 @@ export async function GET(req: NextRequest) {
 
     const bills = await prisma.bill.findMany({
       where: { companyId: user.companyId },
-      include: { vendor: true, items: true, payments: true },
+      include: {
+        vendor: true,
+        items: true,
+        payments: true,
+        project: { select: { id: true, code: true, name: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -39,6 +44,7 @@ export async function POST(req: NextRequest) {
       dueDate,
       isInterState,
       category,
+      projectId,
       items,
     } = body;
 
@@ -98,6 +104,7 @@ export async function POST(req: NextRequest) {
         data: {
           companyId,
           vendorId: resolvedVendorId,
+          projectId: projectId || null,
           number: billNumber,
           billDate: billDate ? new Date(billDate) : new Date(),
           dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 15 * 86400000),
@@ -123,6 +130,7 @@ export async function POST(req: NextRequest) {
         include: {
           vendor: true,
           items: true,
+          project: true,
         },
       });
 

@@ -32,6 +32,8 @@ export default function NewBillPage() {
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorId, setVendorId] = useState('');
+  const [projects, setProjects] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const [projectId, setProjectId] = useState('');
   const [billNumber, setBillNumber] = useState(`BILL-${Math.floor(1000 + Math.random() * 9000)}`);
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]);
@@ -46,13 +48,20 @@ export default function NewBillPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/bills/vendors', { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
+        const [vRes, pRes] = await Promise.all([
+          fetch('/api/bills/vendors', { headers: getAuthHeaders() }),
+          fetch('/api/projects?status=ACTIVE', { headers: getAuthHeaders() }),
+        ]);
+        if (vRes.ok) {
+          const data = await vRes.json();
           if (Array.isArray(data) && data.length > 0) {
             setVendors(data);
             setVendorId(data[0].id);
           }
+        }
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          if (pData.projects) setProjects(pData.projects);
         }
       } catch (e) { /* fall back to manual entry */ }
       setLoadingEntities(false);
@@ -85,6 +94,7 @@ export default function NewBillPage() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({
           vendorId,
+          projectId: projectId || null,
           number: billNumber,
           billDate,
           dueDate,
@@ -141,6 +151,24 @@ export default function NewBillPage() {
                 {loadingEntities && <MenuItem value=""><em>Loading...</em></MenuItem>}
                 {vendors.map((v) => (
                   <MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Project / Cost Center</InputLabel>
+              <Select
+                value={projectId}
+                label="Project / Cost Center"
+                onChange={(e) => setProjectId(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>None (General Overhead)</em>
+                </MenuItem>
+                {projects.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    [{p.code}] {p.name}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>

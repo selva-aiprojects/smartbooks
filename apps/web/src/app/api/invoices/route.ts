@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
         customer: true,
         items: true,
         payments: true,
+        project: { select: { id: true, code: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
       issueDate,
       dueDate,
       isInterState,
+      projectId,
       items,
     } = body;
 
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
         data: {
           companyId,
           customerId: resolvedCustomerId,
+          projectId: projectId || null,
           number: invoiceNumber,
           issueDate: issueDate ? new Date(issueDate) : new Date(),
           dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 15 * 86400000),
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
         include: {
           customer: true,
           items: true,
+          project: true,
         },
       });
 

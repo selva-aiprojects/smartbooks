@@ -47,6 +47,7 @@ model Company {
   salarySlips       SalarySlip[]
   creditNotes       CreditNote[]
   quotations        Quotation[]
+  projects          Project[]
 }
 
 model User {
@@ -154,8 +155,11 @@ model JournalLine {
   amount      Decimal
   type        String
   description String?
+  projectId   String?
+  project     Project?     @relation(fields: [projectId], references: [id])
 
   @@index([accountId])
+  @@index([projectId])
 }
 
 model Customer {
@@ -169,6 +173,7 @@ model Customer {
   invoices  Invoice[]
   creditNotes CreditNote[]
   quotations Quotation[]
+  projects  Project[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -197,6 +202,8 @@ model Invoice {
   eWayBillNo    String?
   eWayBillDate  DateTime?
   eWayBillValidUpto DateTime?
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
   items         InvoiceItem[]
   payments      InvoicePayment[]
   createdAt     DateTime      @default(now())
@@ -204,6 +211,7 @@ model Invoice {
 
   @@index([companyId])
   @@index([companyId, status])
+  @@index([projectId])
 }
 
 model InvoicePayment {
@@ -268,6 +276,8 @@ model Bill {
   gstAmount      Decimal    @default(0) @db.Decimal(19, 2)
   isInterState   Boolean    @default(false)
   totalAmount    Decimal    @default(0) @db.Decimal(19, 2)
+  projectId      String?
+  project        Project?   @relation(fields: [projectId], references: [id])
   items          BillItem[]
   payments       BillPayment[]
   createdAt      DateTime   @default(now())
@@ -275,6 +285,7 @@ model Bill {
 
   @@index([companyId])
   @@index([companyId, status])
+  @@index([projectId])
 }
 
 model BillPayment {
@@ -509,6 +520,30 @@ model QuotationItem {
   amount      Decimal   @default(0) @db.Decimal(19, 2)
   gstRate     Decimal   @default(0) @db.Decimal(5, 2)
   gstAmount   Decimal   @default(0) @db.Decimal(19, 2)
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  companyId   String
+  company     Company       @relation(fields: [companyId], references: [id])
+  code        String        // e.g. "PRJ-2026-001"
+  name        String        // e.g. "DLF CyberCity Fitout", "Cloud Migration FY26"
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Decimal       @default(0) @db.Decimal(19, 2)
+  status      String        @default("ACTIVE") // ACTIVE, ON_HOLD, COMPLETED, ARCHIVED
+  customerId  String?
+  customer    Customer?     @relation(fields: [customerId], references: [id])
+  invoices    Invoice[]
+  bills       Bill[]
+  journalLines JournalLine[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([companyId, status])
 }
 
 

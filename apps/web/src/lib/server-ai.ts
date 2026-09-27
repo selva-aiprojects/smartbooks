@@ -30,6 +30,7 @@ export async function buildFinancialContext(companyId: string): Promise<string> 
     vendors,
     items,
     taxRates,
+    projects,
   ] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
@@ -64,6 +65,15 @@ export async function buildFinancialContext(companyId: string): Promise<string> 
       select: { name: true, sku: true, stock: true, rate: true, gstRate: true },
     }),
     prisma.taxRate.findMany({ where: { companyId, active: true }, select: { name: true, rate: true } }),
+    prisma.project.findMany({
+      where: { companyId },
+      include: {
+        customer: { select: { name: true } },
+        invoices: { select: { totalAmount: true, status: true } },
+        bills: { select: { totalAmount: true, status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
   ]);
 
   let totalRevenue = 0;
@@ -134,6 +144,16 @@ export async function buildFinancialContext(companyId: string): Promise<string> 
 
   const gstRatesList = taxRates.map((t) => `${t.name}: ${t.rate}%`).join(', ') || 'Standard Indian GST';
 
+  const projectsSummary = projects.map((p) => {
+    const rev = p.invoices.filter((i) => i.status !== 'Void').reduce((s, i) => s + Number(i.totalAmount), 0);
+    const exp = p.bills.filter((b) => b.status !== 'Void').reduce((s, b) => s + Number(b.totalAmount), 0);
+    const profit = rev - exp;
+    const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) + '%' : '0%';
+    const budget = Number(p.budget) || 0;
+    const spentPct = budget > 0 ? ((exp / budget) * 100).toFixed(1) + '%' : 'N/A';
+    return `  - [${p.code}] ${p.name} (Client: ${p.customer?.name || 'N/A'}, Status: ${p.status}): Revenue ${fmt(rev)} | Expenses ${fmt(exp)} | Net Profit ${fmt(profit)} (Margin: ${margin}) | Budget ${fmt(budget)} (Spent: ${spentPct})`;
+  }).join('\n') || '  No individual projects registered';
+
   return `
 COMPANY PROFILE:
 - Name: ${company?.name || 'SmartBooks Enterprise'}
@@ -146,6 +166,10 @@ PROFIT & LOSS SUMMARY:
 - Total Expenses: ${fmt(totalExpenses)}
 - Net Profit / (Loss): ${fmt(netProfit)}
 - Profit Margin: ${totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) + '%' : 'N/A'}
+
+PROJECT & PROGRAM P&L BREAKDOWN:
+- Total Tracked Projects: ${projects.length}
+${projectsSummary}
 
 REVENUE BY ACCOUNT:
 ${revenueBreakdown}

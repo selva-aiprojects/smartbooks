@@ -66,7 +66,8 @@ import {
   LocalShipping as TruckIcon,
   Badge as PayrollIcon,
   RequestQuote as EstimateIcon,
-  AssignmentReturn as CreditNoteIcon
+  AssignmentReturn as CreditNoteIcon,
+  Assignment as ProjectIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -110,6 +111,7 @@ const statutoryItems = [
 
 const reportItems = [
   { label: 'Financial Reports', path: '/reports', icon: <ReportsIcon /> },
+  { label: 'Projects & Cost Centers', path: '/projects', icon: <ProjectIcon /> },
 ];
 
 const advancedItems = [
